@@ -1,0 +1,31 @@
+# Environment variables - NEVER commit this
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Data files (large, auto-generated)
+data/trend_history.json
+
+# VS Code settings
+.vscode/
+
+# The weird duplicate folder in your zip
+{app,frontend}/# Environment variables - NEVER commit this
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Data files (large, auto-generated)
+data/trend_history.json
+
+# VS Code settings
+.vscode/
+
+# The weird duplicate folder in your zip
+{app,frontend}/

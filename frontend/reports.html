@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Signal Intel — Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04070e;--bg2:#070b14;--surface:#0b1120;--surface2:#0f1829;--surface3:#141f34;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --accent:#00d4ff;--accent2:#ff3366;--green:#00e5a0;--amber:#ffb020;--purple:#8b5cf6;
+  --text:#b8cce0;--muted:#445570;--muted2:#263548;--white:#edf4ff;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;--r:8px;--r2:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 20% 30%,rgba(139,92,246,0.04) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 80% 70%,rgba(0,212,255,0.03) 0%,transparent 60%);}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);background-size:52px 52px;}
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(4,7,14,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-diamond{width:16px;height:16px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 12px rgba(0,212,255,0.5);}
+.nav-name{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--white);text-transform:uppercase;}
+.nav-links{display:flex;align-items:center;gap:4px;}
+.nav-link{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-radius:7px;text-decoration:none;transition:all 0.15s;border:1px solid transparent;}
+.nav-link:hover{color:var(--text);border-color:var(--border2);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:40px 24px 80px;}
+.page-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);opacity:0.7;margin-bottom:8px;}
+.page-title{font-size:32px;font-weight:800;color:var(--white);letter-spacing:-0.03em;margin-bottom:6px;}
+.page-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:40px;line-height:1.8;}
+/* Sections grid */
+.reports-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:660px){.reports-grid{grid-template-columns:1fr;}}
+/* Cards */
+.r-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:border-color 0.2s,transform 0.2s;}
+.r-card:hover{border-color:var(--border2);}
+.r-card.full{grid-column:1/-1;}
+.r-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.r-card-title{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);}
+.r-card-icon{font-size:16px;opacity:0.6;}
+.r-card-body{padding:22px;}
+/* Topic display */
+.current-topic{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:20px;letter-spacing:0.04em;}
+.current-topic b{color:var(--accent);}
+/* Inputs */
+.field{margin-bottom:16px;}
+.field-label{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
+.field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--white);font-family:var(--sans);font-size:14px;padding:10px 14px;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:var(--accent);}
+.field-input::placeholder{color:var(--muted);font-size:13px;}
+/* Freq buttons */
+.freq-row{display:flex;gap:8px;flex-wrap:wrap;}
+.freq-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:7px 16px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.freq-btn:hover{border-color:var(--border2);color:var(--text);}
+.freq-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.08);}
+/* Actions */
+.action-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+  letter-spacing:0.1em;text-transform:uppercase;padding:12px 22px;border-radius:var(--r);
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;border:none;}
+.action-btn.primary{background:var(--accent);color:#000;font-weight:700;box-shadow:0 4px 20px rgba(0,212,255,0.25);}
+.action-btn.primary:hover{background:#33e0ff;box-shadow:0 4px 28px rgba(0,212,255,0.4);}
+.action-btn.primary:disabled{background:var(--muted2);color:var(--muted);box-shadow:none;cursor:not-allowed;}
+.action-btn.outline{background:transparent;border:1px solid var(--border2);color:var(--text);}
+.action-btn.outline:hover{border-color:var(--accent);color:var(--accent);}
+.action-btn.outline:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}
+/* Status message */
+.status-msg{font-family:var(--mono);font-size:11px;margin-top:14px;letter-spacing:0.04em;display:none;}
+.status-msg.ok{color:var(--green);display:block;}
+.status-msg.err{color:var(--accent2);display:block;}
+/* Notion status */
+.notion-status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;margin-top:12px;}
+.n-dot{width:7px;height:7px;border-radius:50%;}
+.n-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+.n-dot.off{background:var(--muted);}
+/* Send grid style */
+.send-row{display:flex;gap:10px;align-items:stretch;}
+.send-row .field-input{flex:1;}
+/* Divider */
+.divider{height:1px;background:var(--border);margin:20px 0;}
+/* Info tip */
+.tip{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.7;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.tip b{color:var(--text);}
+/* n8n setup wizard */
+.n8n-wizard{background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.15);border-radius:var(--r2);overflow:hidden;margin-bottom:16px;}
+.n8n-wizard-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;transition:background 0.15s;}
+.n8n-wizard-header:hover{background:rgba(0,212,255,0.05);}
+.n8n-wizard-title{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.n8n-wizard-toggle{font-family:var(--mono);font-size:10px;color:var(--muted);transition:color 0.15s;}
+.n8n-wizard-header:hover .n8n-wizard-toggle{color:var(--accent);}
+.n8n-wizard-body{display:none;padding:0 16px 16px;}
+.n8n-wizard-body.open{display:block;animation:fadeUp 0.2s ease;}
+.n8n-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.n8n-step{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);}
+.n8n-step-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.n8n-step-content{flex:1;}
+.n8n-step-title{font-size:12px;font-weight:600;color:var(--white);margin-bottom:3px;}
+.n8n-step-desc{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;}
+.n8n-step-desc code{color:var(--amber);background:rgba(255,176,32,0.08);padding:1px 5px;border-radius:3px;}
+.n8n-step-desc a{color:var(--accent);text-decoration:none;}
+.n8n-step-desc a:hover{text-decoration:underline;}
+.n8n-cloud-option{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:var(--r);margin-top:10px;}
+.n8n-cloud-label{font-family:var(--mono);font-size:10px;color:#b08fdd;}
+.n8n-cloud-label b{color:var(--white);}
+.n8n-cloud-btn{font-family:var(--mono);font-size:10px;color:#b08fdd;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:var(--r);padding:6px 14px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
+.n8n-cloud-btn:hover{background:rgba(139,92,246,0.18);color:var(--white);}
+
+/* Empty / spinner */
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp 0.35s ease both;}
+.d1{animation-delay:0.05s;}.d2{animation-delay:0.1s;}.d3{animation-delay:0.15s;}
+/* Toast */
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--text);max-width:320px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toastIn 0.2s ease both;line-height:1.5;}
+.toast a{color:var(--accent);}
+.toast.success{border-color:rgba(0,229,160,0.4);color:var(--green);}
+.toast.error{border-color:rgba(255,51,102,0.4);color:var(--accent2);}
+.toast.warn{border-color:rgba(255,176,32,0.4);color:var(--amber);}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes toastOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(16px)}}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="nav-diamond"></div><span class="nav-name">Signal Intel</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Discover</a>
+    <a class="nav-link" href="dashboard.html">Dashboard</a>
+    <a class="nav-link" href="explore.html">Explore</a>
+    <a class="nav-link active" href="reports.html">Reports</a>
+  </div>
+  <div class="nav-right"></div>
+</nav>
+
+<div class="page">
+  <div class="page-eyebrow anim">Reports &amp; Automation</div>
+  <div class="page-title anim">Distribute &amp;<br>Schedule</div>
+  <p class="page-sub anim">// Export results · Email digests · Slack notifications · n8n automation</p>
+
+  <div class="reports-grid">
+
+    <!-- Schedule (n8n) -->
+    <div class="r-card full anim d1">
+      <div class="r-card-head">
+        <span class="r-card-title">⚙ Automated Schedule (n8n)</span>
+        <span class="r-card-icon">🔄</span>
+      </div>
+      <div class="r-card-body">
+        <div class="current-topic">Current topic: <b id="sched-topic">—</b></div>
+        <div class="field">
+          <span class="field-label">Report Frequency</span>
+          <div class="freq-row" id="freq-row">
+            <button class="freq-btn active" data-cron="0 9 * * *">Daily 9 AM</button>
+            <button class="freq-btn" data-cron="0 9,18 * * *">Twice Daily</button>
+            <button class="freq-btn" data-cron="0 9 * * 1">Weekly Monday</button>
+            <button class="freq-btn" data-cron="0 9 1 * *">Monthly</button>
+          </div>
+        </div>
+        <div class="n8n-wizard" id="n8n-wizard">
+          <div class="n8n-wizard-header" onclick="toggleN8nWizard()">
+            <span class="n8n-wizard-title">⚡ Setup Guide — Connect n8n in 4 steps</span>
+            <span class="n8n-wizard-toggle" id="n8n-wizard-toggle">▼ Show</span>
+          </div>
+          <div class="n8n-wizard-body" id="n8n-wizard-body">
+            <div class="n8n-steps">
+              <div class="n8n-step">
+                <div class="n8n-step-num">1</div>
+                <div class="n8n-step-content">
+                  <div class="n8n-step-title">Install & start n8n locally</div>
+                  <div class="n8n-step-desc">Run <code>npx n8n start</code> in your terminal. n8n will start at <code>localhost:5678</code>.</div>
+                </div>
+              </div>
+              <div class="n8n-step">
+                <div class="n8n-step-num">2</div>
+                <div class="n8n-step-content">
+                  <div class="n8n-step-title">Create a Webhook node</div>
+                  <div class="n8n-step-desc">In n8n, create a new workflow → add a <b>Webhook</b> node → set HTTP Method to <code>POST</code> → copy the <b>Production URL</b> (not test URL).</div>
+                </div>
+              </div>
+              <div class="n8n-step">
+                <div class="n8n-step-num">3</div>
+                <div class="n8n-step-content">
+                  <div class="n8n-step-title">Add the URL to your .env file</div>
+                  <div class="n8n-step-desc">Paste it as <code>N8N_WEBHOOK_URL=https://localhost:5678/webhook/your-id</code> and restart the backend.</div>
+                </div>
+              </div>
+              <div class="n8n-step">
+                <div class="n8n-step-num">4</div>
+                <div class="n8n-step-content">
+                  <div class="n8n-step-title">Activate the workflow</div>
+                  <div class="n8n-step-desc">Toggle the workflow to <b>Active</b> in n8n (top-right switch). Test mode webhooks expire — only active webhooks receive scheduled calls.</div>
+                </div>
+              </div>
+            </div>
+            <div class="n8n-cloud-option">
+              <span class="n8n-cloud-label">No local setup? <b>n8n Cloud</b> is a hosted alternative — no install needed.</span>
+              <a class="n8n-cloud-btn" href="https://n8n.io/cloud" target="_blank" rel="noopener">n8n Cloud →</a>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="action-btn primary" id="schedule-btn">⚙ Schedule via n8n →</button>
+        </div>
+        <div class="status-msg" id="sched-msg"></div>
+      </div>
+    </div>
+
+    <!-- Export to Notion -->
+    <div class="r-card anim d2">
+      <div class="r-card-head">
+        <span class="r-card-title">↗ Export to Notion</span>
+        <span class="r-card-icon">📄</span>
+      </div>
+      <div class="r-card-body">
+        <div class="current-topic">Topic: <b id="notion-topic">—</b></div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
+          Creates a formatted Notion page with your analysis summary, key trends, and opportunities.
+          Requires <code style="font-family:var(--mono);font-size:10px;color:var(--amber)">NOTION_API_KEY</code> + <code style="font-family:var(--mono);font-size:10px;color:var(--amber)">NOTION_PAGE_ID</code> in .env.
+        </p>
+        <div class="btn-row">
+          <button class="action-btn primary" id="notion-btn">↗ Export now</button>
+        </div>
+        <div class="status-msg" id="notion-msg"></div>
+      </div>
+    </div>
+
+    <!-- Email digest -->
+    <div class="r-card anim d2">
+      <div class="r-card-head">
+        <span class="r-card-title">✉ Email Digest</span>
+        <span class="r-card-icon">📧</span>
+      </div>
+      <div class="r-card-body">
+        <div class="current-topic">Topic: <b id="email-topic">—</b></div>
+        <div class="field">
+          <span class="field-label">Recipient Email</span>
+          <div class="send-row">
+            <input type="email" class="field-input" id="digest-email" placeholder="your@email.com" autocomplete="email"/>
+            <button class="action-btn primary" id="email-btn">Send →</button>
+          </div>
+        </div>
+        <div class="tip">Requires <b>SENDGRID_API_KEY</b> + <b>FROM_EMAIL</b> in .env.</div>
+        <div class="status-msg" id="email-msg"></div>
+      </div>
+    </div>
+
+    <!-- Slack -->
+    <div class="r-card anim d3">
+      <div class="r-card-head">
+        <span class="r-card-title"># Slack Notification</span>
+        <span class="r-card-icon">💬</span>
+      </div>
+      <div class="r-card-body">
+        <div class="current-topic">Topic: <b id="slack-topic">—</b></div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
+          Posts a rich Slack message with your top trend summary and opportunity signals.
+          Requires <code style="font-family:var(--mono);font-size:10px;color:var(--amber)">SLACK_WEBHOOK_URL</code> in .env.
+        </p>
+        <div class="btn-row">
+          <button class="action-btn primary" id="slack-btn"># Post to Slack</button>
+        </div>
+        <div class="status-msg" id="slack-msg"></div>
+      </div>
+    </div>
+
+    <!-- History (future) -->
+    <div class="r-card full anim d3">
+      <div class="r-card-head">
+        <span class="r-card-title">📋 Analysis History</span>
+        <span class="r-card-icon">🗂</span>
+      </div>
+      <div class="r-card-body">
+        <div id="history-list" style="font-family:var(--mono);font-size:11px;color:var(--muted);"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = (() => {
+  const {protocol,hostname,port,origin} = window.location;
+  if (protocol==='file:') return 'http://localhost:8000';
+  if ((hostname==='localhost'||hostname==='127.0.0.1') && port!=='8000') return `${protocol}//${hostname}:8000`;
+  return origin;
+})();
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(html,type='success',ms=4500){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=html;c.appendChild(el);
+  setTimeout(()=>{el.style.animation='toastOut .2s ease forwards';el.addEventListener('animationend',()=>el.remove());},ms);
+}
+function setMsg(id,text,type){
+  const el=document.getElementById(id);
+  el.textContent=text;el.className=`status-msg ${type}`;
+}
+
+let data=null, selectedCron='0 9 * * *';
+try{data=JSON.parse(localStorage.getItem('si_analysis')||'null');}catch{}
+
+const topic = data?.topic || '—';
+['sched-topic','notion-topic','email-topic','slack-topic'].forEach(id=>{
+  const el=document.getElementById(id);if(el) el.textContent=topic;
+});
+
+// Pre-fill email
+document.getElementById('digest-email').value = localStorage.getItem('digest_email')||'';
+
+// Frequency toggle
+document.querySelectorAll('#freq-row .freq-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#freq-row .freq-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');selectedCron=btn.dataset.cron;
+  });
+});
+
+// n8n Setup Wizard toggle
+function toggleN8nWizard() {
+  const body = document.getElementById('n8n-wizard-body');
+  const toggle = document.getElementById('n8n-wizard-toggle');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  toggle.textContent = isOpen ? '▼ Show' : '▲ Hide';
+}
+
+// Schedule
+document.getElementById('schedule-btn').addEventListener('click', async()=>{
+  if(!data){toast('Run an analysis first','warn');return;}
+  const btn=document.getElementById('schedule-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Scheduling…';
+  try{
+    const r=await fetch(`${API}/schedule`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:data.topic,cron_expression:selectedCron})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    setMsg('sched-msg','✓ Scheduled. n8n will run this report on your chosen frequency.','ok');
+    toast('⚙ Schedule registered ✓','success');
+  }catch(e){
+    const msg=e.message.toLowerCase().includes('n8n')||e.message.includes('503')
+      ?'n8n not configured — add N8N_WEBHOOK_URL to .env':e.message;
+    setMsg('sched-msg',msg,'err');
+    toast(msg,'warn',5000);
+  }finally{btn.disabled=false;btn.innerHTML='⚙ Schedule via n8n →';}
+});
+
+// Notion export
+document.getElementById('notion-btn').addEventListener('click', async()=>{
+  if(!data){toast('Run an analysis first','warn');return;}
+  const btn=document.getElementById('notion-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Exporting…';
+  try{
+    const r=await fetch(`${API}/export/notion`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:data.topic})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    const link=j.notion_url?`<a href="${j.notion_url}" target="_blank">Open page →</a>`:'';
+    setMsg('notion-msg',j.notion_url?'✓ Notion page created':'✓ Exported to Notion','ok');
+    toast(j.notion_url?`↗ Notion page created · <a href="${j.notion_url}" target="_blank">Open →</a>`:'↗ Exported ✓','success',7000);
+  }catch(e){
+    const msg=e.message.includes('503')?'Notion not configured — add NOTION_API_KEY + NOTION_PAGE_ID to .env':e.message;
+    setMsg('notion-msg',msg,'err');toast(msg,'warn',5000);
+  }finally{btn.disabled=false;btn.innerHTML='↗ Export now';}
+});
+
+// Email digest
+document.getElementById('email-btn').addEventListener('click', async()=>{
+  if(!data){toast('Run an analysis first','warn');return;}
+  const email=document.getElementById('digest-email').value.trim();
+  if(!email){toast('Enter a recipient email','warn');return;}
+  const btn=document.getElementById('email-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const r=await fetch(`${API}/notify/digest`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:data.topic,email,report_data:data})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    localStorage.setItem('digest_email',email);
+    setMsg('email-msg',`✓ Report sent to ${email}`,'ok');
+    toast(`✉ Report sent to ${esc(email)}`,'success');
+  }catch(e){
+    const msg=e.message.includes('503')||e.message.includes('SENDGRID')?'Email not configured — add SENDGRID_API_KEY to .env':e.message;
+    setMsg('email-msg',msg,'err');toast(msg,'warn',5000);
+  }finally{btn.disabled=false;btn.innerHTML='Send →';}
+});
+
+// Slack
+document.getElementById('slack-btn').addEventListener('click', async()=>{
+  if(!data){toast('Run an analysis first','warn');return;}
+  const btn=document.getElementById('slack-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Sending…';
+  try{
+    const r=await fetch(`${API}/notify/slack`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:data.topic})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    setMsg('slack-msg','✓ Posted to Slack','ok');
+    toast('# Posted to Slack ✓','success');
+  }catch(e){
+    const msg=e.message.includes('503')?'Slack not configured — add SLACK_WEBHOOK_URL to .env':e.message;
+    setMsg('slack-msg',msg,'err');toast(msg,'warn',5000);
+  }finally{btn.disabled=false;btn.innerHTML='# Post to Slack';}
+});
+
+// ── Analysis History ─────────────────────────────────────────────
+const histEl = document.getElementById('history-list');
+
+function relTime(ts) {
+  if (!ts || isNaN(Number(ts))) return 'unknown';
+  const s = Math.floor((Date.now() - Number(ts)) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+function renderHistory(rows) {
+  if (!rows || !rows.length) {
+    histEl.innerHTML = '<div style="text-align:center;padding:28px;color:var(--muted);">No analysis history yet — run your first analysis to see it here.</div>';
+    return;
+  }
+  histEl.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr>
+      <th style="text-align:left;padding:8px 12px;color:var(--muted);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;">Topic</th>
+      <th style="text-align:right;padding:8px 12px;color:var(--muted);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;">When</th>
+    </tr></thead>
+    <tbody>${rows.map(r => {
+      // Support both {topic,ts} objects AND legacy plain strings AND API rows with captured_at
+      const topicStr = typeof r === 'string' ? r : (r.topic || r.name || '—');
+      const rawTs    = typeof r === 'string' ? null
+                     : (r.ts || (r.captured_at ? new Date(r.captured_at).getTime() : null));
+      const isActive = data && data.topic && data.topic.toLowerCase() === topicStr.toLowerCase();
+      return `<tr style="transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''" onclick="window.location='index.html'">
+        <td style="padding:10px 12px;color:${isActive ? 'var(--accent)' : 'var(--text)'};border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;">
+          ${esc(topicStr)}${isActive ? ' <span style="font-family:var(--mono);font-size:9px;color:var(--accent);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:20px;padding:2px 8px;margin-left:6px;">current</span>' : ''}
+        </td>
+        <td style="padding:10px 12px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;">${relTime(rawTs)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+async function loadHistory() {
+  // Read localStorage (always available, works offline)
+  const localRec = (() => {
+    try { return JSON.parse(localStorage.getItem('si_recent') || '[]'); } catch { return []; }
+  })();
+  // Normalise any legacy plain-string entries
+  const normalised = localRec.map(r => typeof r === 'string' ? { topic: r, ts: null } : r);
+
+  // Try to enrich with server-side PostgreSQL history
+  try {
+    const resp = await fetch(`${API}/history`, { signal: AbortSignal.timeout(4000) });
+    if (resp.ok) {
+      const apiRows = await resp.json(); // [{topic, captured_at, sources_count, ...}]
+      // Merge: dedupe by topic (case-insensitive), server rows win for timestamps
+      const seen = new Set();
+      const merged = [];
+      for (const r of [...apiRows, ...normalised]) {
+        const key = (r.topic || r.name || '').toLowerCase().trim();
+        if (key && !seen.has(key)) { seen.add(key); merged.push(r); }
+      }
+      renderHistory(merged.slice(0, 25));
+      return;
+    }
+  } catch (_) { /* API unavailable — fall through to localStorage only */ }
+
+  renderHistory(normalised.slice(0, 25));
+}
+
+loadHistory();
+</script>
+</body>
+</html>

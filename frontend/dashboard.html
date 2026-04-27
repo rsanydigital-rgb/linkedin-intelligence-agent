@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Signal Intel — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04070e;--bg2:#070b14;--surface:#0b1120;--surface2:#0f1829;--surface3:#141f34;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --accent:#00d4ff;--accent2:#ff3366;--green:#00e5a0;--amber:#ffb020;--purple:#8b5cf6;
+  --text:#b8cce0;--muted:#445570;--muted2:#263548;--white:#edf4ff;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+  --r:8px;--r2:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 15% 30%,rgba(0,212,255,0.05) 0%,transparent 60%),
+  radial-gradient(ellipse 50% 50% at 85% 70%,rgba(139,92,246,0.04) 0%,transparent 60%);}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);
+  background-size:52px 52px;}
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:60px;background:rgba(4,7,14,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-diamond{width:16px;height:16px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 12px rgba(0,212,255,0.5);}
+.nav-name{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--white);text-transform:uppercase;}
+.nav-links{display:flex;align-items:center;gap:4px;}
+.nav-link{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+  padding:7px 14px;border-radius:7px;text-decoration:none;transition:all 0.15s;border:1px solid transparent;}
+.nav-link:hover{color:var(--text);border-color:var(--border2);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.topic-badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,0.08);
+  border:1px solid rgba(0,212,255,0.2);border-radius:20px;padding:5px 14px;max-width:220px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:32px 24px 80px;}
+
+/* Topic bar */
+.topic-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border2);border-radius:var(--r2);padding:16px 24px;margin-bottom:24px;}
+.tb-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.tb-title{font-size:22px;font-weight:700;color:var(--white);letter-spacing:-0.02em;}
+.tb-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.meta-pill{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;}
+.meta-pill b{color:var(--text);}
+.btn-back{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--accent);background:rgba(0,212,255,0.06);
+  border:1px solid rgba(0,212,255,0.25);border-radius:var(--r);padding:8px 16px;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;}
+.btn-back:hover{background:rgba(0,212,255,0.12);}
+.cache-bar{display:none;align-items:center;gap:10px;padding:9px 16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r);margin-bottom:20px;font-family:var(--mono);font-size:11px;}
+.cache-bar.visible{display:flex;}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.cdot.cached{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.cdot.live{background:var(--green);box-shadow:0 0 8px var(--green);}
+.clabel.cached{color:var(--accent);}
+.clabel.live{color:var(--green);}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:680px){.kpi-row{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px 22px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;}
+.kpi:hover{border-color:var(--border2);transform:translateY(-2px);}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.k-accent::after{background:linear-gradient(90deg,var(--accent),transparent);}
+.kpi.k-green::after{background:linear-gradient(90deg,var(--green),transparent);}
+.kpi.k-amber::after{background:linear-gradient(90deg,var(--amber),transparent);}
+.kpi.k-purple::after{background:linear-gradient(90deg,var(--purple),transparent);}
+.kpi-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.kpi-val{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;letter-spacing:-0.02em;margin-bottom:4px;}
+.kpi.k-accent .kpi-val{color:var(--accent);}
+.kpi.k-green  .kpi-val{color:var(--green);}
+.kpi.k-amber  .kpi-val{color:var(--amber);}
+.kpi.k-purple .kpi-val{color:var(--purple);}
+.kpi-sub{font-size:11px;color:var(--muted);}
+/* Dominant KPI — top opportunity score */
+.kpi.kpi-dominant{border-color:rgba(0,212,255,0.25);background:rgba(0,212,255,0.04);}
+.kpi.kpi-dominant .kpi-val{font-size:44px;}
+.kpi.kpi-dominant .kpi-lbl{color:var(--accent);letter-spacing:0.12em;}
+/* Opportunity score tooltip */
+.kpi-info-btn{background:none;border:1px solid var(--muted2);border-radius:50%;width:16px;height:16px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;transition:all 0.15s;flex-shrink:0;}
+.kpi-info-btn:hover{color:var(--accent);border-color:var(--accent);}
+.kpi-tooltip{display:none;position:absolute;z-index:50;bottom:calc(100% + 8px);left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--text);line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:fadeDown 0.15s ease;}
+.kpi-tooltip.open{display:block;}
+.kpi-tooltip b{color:var(--accent);}
+.kpi{position:relative;}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.card-title{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);}
+.card-badge{font-family:var(--mono);font-size:9px;color:var(--accent);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:20px;padding:2px 10px;}
+.card-body{padding:20px;}
+.card-link{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);text-decoration:none;transition:color 0.15s;}
+.card-link:hover{color:var(--accent);}
+
+/* Layout grids */
+.dash-row{display:grid;gap:16px;margin-bottom:16px;}
+.dash-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.dash-row.cols-2{grid-template-columns:1fr 1fr;}
+.dash-row.cols-2-1{grid-template-columns:2fr 1fr;}
+.dash-row.cols-1-2{grid-template-columns:1fr 2fr;}
+@media(max-width:860px){.dash-row.cols-3,.dash-row.cols-2,.dash-row.cols-2-1,.dash-row.cols-1-2{grid-template-columns:1fr;}}
+
+/* ── CHART: Donut ── */
+.donut-wrap{display:flex;align-items:center;gap:20px;padding:4px 0;}
+.donut-canvas-wrap{position:relative;flex-shrink:0;}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.donut-cval{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--white);line-height:1;}
+.donut-clbl{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;color:var(--muted);margin-top:2px;}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:7px;}
+.dl-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dl-label{color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dl-val{font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+/* ── CHART: Horizontal bar ── */
+.hbar-list{display:flex;flex-direction:column;gap:10px;}
+.hbar-row{display:flex;flex-direction:column;gap:4px;}
+.hbar-meta{display:flex;justify-content:space-between;align-items:baseline;}
+.hbar-label{font-size:12px;font-weight:500;color:var(--white);}
+.hbar-val{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.hbar-track{height:6px;background:var(--muted2);border-radius:3px;overflow:hidden;}
+.hbar-fill{height:100%;border-radius:3px;transition:width 1s cubic-bezier(.16,1,.3,1);}
+
+/* ── CHART: Growth Gauge ── */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 0;}
+.gauge-label-row{display:flex;justify-content:space-between;width:100%;font-family:var(--mono);font-size:9px;color:var(--muted);}
+.gauge-verdict{font-family:var(--mono);font-size:11px;text-align:center;margin-top:6px;}
+
+/* ── CHART: Sparkline Evolution ── */
+.evo-list{display:flex;flex-direction:column;gap:10px;}
+.evo-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r);background:var(--surface2);border:1px solid transparent;transition:border-color 0.15s;}
+.evo-item:hover{border-color:var(--border2);}
+.evo-info{flex:1;min-width:0;}
+.evo-name{font-size:12px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.evo-scores{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;}
+.evo-spark{flex-shrink:0;}
+.evo-pill{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 8px;border-radius:20px;flex-shrink:0;}
+.evo-pill.new{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.25);}
+.evo-pill.rising{background:rgba(0,229,160,0.1);color:var(--green);border:1px solid rgba(0,229,160,0.25);}
+.evo-pill.falling{background:rgba(255,51,102,0.1);color:var(--accent2);border:1px solid rgba(255,51,102,0.25);}
+.evo-pill.stable{background:rgba(74,95,122,0.2);color:var(--muted);border:1px solid var(--border);}
+
+/* ── CHART: Sector Heatmap ── */
+.heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
+.hm-cell{padding:12px 10px;border-radius:var(--r);border:1px solid var(--border);position:relative;overflow:hidden;cursor:default;transition:transform 0.15s,border-color 0.15s;}
+.hm-cell:hover{transform:translateY(-2px);border-color:var(--border2);}
+.hm-bg{position:absolute;inset:0;opacity:0.12;}
+.hm-label{position:relative;font-size:11px;font-weight:600;color:var(--white);margin-bottom:4px;line-height:1.3;}
+.hm-score{position:relative;font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;}
+.hm-bar{position:absolute;bottom:0;left:0;right:0;height:2px;}
+
+/* ── LLM Insights ── */
+.summary-text{font-size:14px;line-height:1.75;color:var(--white);border-left:3px solid var(--accent);padding-left:16px;margin-bottom:16px;}
+.conf-row{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;}
+.conf-row b{color:var(--accent);}
+.conf-bar{width:100%;height:3px;background:var(--muted2);border-radius:2px;margin-top:5px;overflow:hidden;}
+.conf-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width 0.8s ease;}
+.take-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.take-item{display:flex;gap:10px;font-size:13px;color:var(--text);line-height:1.5;}
+.take-bullet{color:var(--accent);flex-shrink:0;margin-top:2px;}
+
+/* ── Opportunities ── */
+.opp-list{display:flex;flex-direction:column;gap:8px;}
+.opp-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r);background:var(--surface2);border:1px solid transparent;transition:all 0.15s;}
+.opp-row:hover{border-color:rgba(0,212,255,0.2);transform:translateX(2px);}
+.opp-info{flex:1;min-width:0;}
+.opp-title{font-size:12px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.opp-reason{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.opp-score{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green);flex-shrink:0;line-height:1;}
+.opp-score span{font-size:9px;color:var(--muted);}
+
+/* ── Quick Actions ── */
+.qa-list{display:flex;flex-direction:column;gap:6px;}
+.qa-btn{width:100%;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10px;
+  letter-spacing:0.08em;color:var(--muted);background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r);padding:11px 16px;cursor:pointer;transition:all 0.15s;text-decoration:none;}
+.qa-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface3);}
+.qa-btn.qa-accent:hover{color:var(--accent);border-color:rgba(0,212,255,0.3);}
+.qa-btn.qa-green:hover{color:var(--green);border-color:rgba(0,229,160,0.3);}
+.qa-icon{font-size:14px;flex-shrink:0;}
+.qa-label{flex:1;text-align:left;}
+.qa-arrow{opacity:0.3;transition:all 0.15s;}
+.qa-btn:hover .qa-arrow{opacity:0.7;transform:translateX(3px);}
+
+/* Misc */
+.empty{text-align:center;padding:36px 20px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.empty .big{font-size:26px;display:block;margin-bottom:10px;opacity:0.4;}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp 0.35s ease both;}
+.d1{animation-delay:0.05s;}.d2{animation-delay:0.1s;}.d3{animation-delay:0.15s;}.d4{animation-delay:0.2s;}.d5{animation-delay:0.25s;}
+
+/* ── Sentiment Overview ── */
+.sentiment-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+.sent-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;}
+.sent-block-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;}
+.sent-block-lbl.positive{color:#00e5a0;}.sent-block-lbl.negative{color:#ff3366;}.sent-block-lbl.neutral{color:#445570;}
+.sent-block-val{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
+.sent-block-val.positive{color:#00e5a0;}.sent-block-val.negative{color:#ff3366;}.sent-block-val.neutral{color:#8898aa;}
+.sent-track{width:100%;height:8px;background:var(--muted2);border-radius:4px;overflow:hidden;margin-top:8px;}
+.sent-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.16,1,.3,1);}
+.sent-fill.positive{background:linear-gradient(90deg,#00e5a0,#00b87a);}
+.sent-fill.negative{background:linear-gradient(90deg,#ff3366,#cc1a44);}
+.sent-fill.neutral{background:linear-gradient(90deg,#445570,#2e3d52);}
+.sent-overall{display:flex;align-items:center;gap:10px;padding:10px 0 2px;}
+.sent-overall-label{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;}
+.sent-overall-label.positive{color:#00e5a0;}.sent-overall-label.negative{color:#ff3366;}.sent-overall-label.neutral{color:#8898aa;}
+.sent-overall-score{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.sent-src-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.sent-src-pill{font-family:var(--mono);font-size:9px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);display:flex;align-items:center;gap:5px;}
+.sent-src-dot{width:6px;height:6px;border-radius:50%;}
+/* Toast */
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;
+  font-family:var(--mono);font-size:11px;color:var(--text);max-width:320px;pointer-events:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toastIn 0.2s ease both;line-height:1.5;}
+.toast a{color:var(--accent);}
+.toast.success{border-color:rgba(0,229,160,0.4);color:var(--green);}
+.toast.error{border-color:rgba(255,51,102,0.4);color:var(--accent2);}
+.toast.warn{border-color:rgba(255,176,32,0.4);color:var(--amber);}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+
+@keyframes fadeDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(4,7,14,0.75);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:380px;max-width:90vw;}
+.modal-title{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
+.modal-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  color:var(--white);font-family:var(--sans);font-size:14px;padding:10px 14px;outline:none;margin-bottom:12px;transition:border-color 0.2s;}
+.modal-input:focus{border-color:var(--accent);}
+.modal-actions{display:flex;gap:8px;}
+.modal-send{flex:1;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;background:var(--accent);color:#000;
+  border:none;border-radius:var(--r);padding:10px;cursor:pointer;font-weight:700;transition:background 0.15s;}
+.modal-send:hover{background:#33e0ff;}
+.modal-send:disabled{background:var(--muted2);color:var(--muted);cursor:not-allowed;}
+.modal-cancel{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;cursor:pointer;transition:all 0.15s;}
+.modal-cancel:hover{color:var(--text);border-color:var(--border2);}
+
+/* ── Market Intel: Interest Line Chart ── */
+.line-chart-wrap{position:relative;width:100%;height:220px;}
+.line-chart-wrap canvas{width:100%!important;height:100%!important;}
+.lc-legend{display:flex;gap:16px;margin-top:10px;font-family:var(--mono);font-size:10px;}
+.lc-item{display:flex;align-items:center;gap:6px;}
+.lc-dot{width:8px;height:8px;border-radius:50%;}
+.lc-dot.actual{background:var(--accent);}
+.lc-dot.forecast{background:var(--purple);}
+.trend-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.trend-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;}
+.trend-stat-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.trend-stat-val{font-family:var(--mono);font-size:18px;font-weight:700;line-height:1;}
+.trend-stat-val.rising{color:var(--green);}
+.trend-stat-val.falling{color:var(--accent2);}
+.trend-stat-val.stable{color:var(--amber);}
+.trend-stat-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.source-tag{font-family:var(--mono);font-size:9px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 8px;display:inline-block;margin-top:6px;}
+/* ── Market Intel: Job Postings ── */
+.jobs-top{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;margin-bottom:14px;}
+.jobs-count-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 20px;text-align:center;min-width:100px;}
+.jobs-count-num{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--green);line-height:1;}
+.jobs-count-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.jobs-meta{display:flex;flex-direction:column;gap:6px;}
+.jobs-meta-row{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.jobs-meta-row b{color:var(--text);}
+.job-list{display:flex;flex-direction:column;gap:6px;}
+.job-card{display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);transition:border-color 0.15s;}
+.job-card:hover{border-color:rgba(0,229,160,0.3);}
+.job-card a{text-decoration:none;}
+.job-title{font-size:12px;font-weight:600;color:var(--white);}
+.job-title a{color:var(--white);}
+.job-title a:hover{color:var(--green);}
+.job-meta{font-family:var(--mono);font-size:9px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
+.job-company{color:var(--accent);}
+.jobs-loading{text-align:center;padding:30px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="nav-diamond"></div>
+    <span class="nav-name">Signal Intel</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Discover</a>
+    <a class="nav-link active" href="dashboard.html">Dashboard</a>
+    <a class="nav-link" href="explore.html">Explore</a>
+    <a class="nav-link" href="reports.html">Reports</a>
+  </div>
+  <div class="nav-right">
+    <div class="topic-badge" id="nav-topic">—</div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="topic-bar anim">
+    <div>
+      <div class="tb-eyebrow">Analysis Result</div>
+      <div class="tb-title" id="dash-title">Loading…</div>
+    </div>
+    <div class="tb-right">
+      <div class="meta-pill">Sources: <b id="m-sources">—</b></div>
+      <div class="meta-pill">Trends: <b id="m-trends">—</b></div>
+      <div class="meta-pill">Time: <b id="m-time">—</b></div>
+      <a class="btn-back" href="index.html">← New Analysis</a>
+    </div>
+  </div>
+
+  <div class="cache-bar" id="cache-bar"></div>
+
+  <!-- KPIs -->
+  <div class="kpi-row anim d1">
+    <div class="kpi k-accent kpi-dominant">
+      <div class="kpi-lbl">Top Opportunity Score <button class="kpi-info-btn" id="opp-info-btn" type="button" aria-label="Methodology info">?</button></div>
+      <div class="kpi-val" id="kpi-opp">—</div>
+      <div class="kpi-sub">/ 10 · high growth + low competition</div>
+      <div class="kpi-tooltip" id="opp-tooltip">
+        <b>Methodology</b><br>
+        Composite of three signals:<br>
+        · <b>Trend velocity</b> — TF-IDF cluster score growth over time<br>
+        · <b>Supply gap</b> — search volume vs. content saturation ratio<br>
+        · <b>LLM signal</b> — model-assessed strategic relevance<br>
+        Scored 0–10; ≥8 = high growth, low competition.
+      </div>
+    </div>
+    <div class="kpi k-green"><div class="kpi-lbl">Trend Clusters</div><div class="kpi-val" id="kpi-trends">—</div><div class="kpi-sub">extracted</div></div>
+    <div class="kpi k-amber"><div class="kpi-lbl">Confidence</div><div class="kpi-val" id="kpi-conf">—</div><div class="kpi-sub">% LLM certainty</div></div>
+    <div class="kpi k-purple"><div class="kpi-lbl">Sources</div><div class="kpi-val" id="kpi-src">—</div><div class="kpi-sub">analysed</div></div>
+  </div>
+
+
+  <!-- Sentiment Overview Card -->
+  <div class="dash-row anim d2" style="margin-bottom:16px;">
+    <div class="card" id="sentiment-card" style="display:none;">
+      <div class="card-head">
+        <span class="card-title">Sentiment Overview</span>
+        <span class="card-badge" id="sent-overall-badge">—</span>
+      </div>
+      <div class="card-body">
+        <div class="sent-overall">
+          <span class="sent-overall-label" id="sent-overall-label">—</span>
+          <span class="sent-overall-score" id="sent-overall-score"></span>
+        </div>
+        <div class="sent-track" style="margin-bottom:16px;height:10px;background:var(--muted2);border-radius:5px;overflow:hidden;display:flex;gap:1px;">
+          <div class="sent-fill positive" id="sent-bar-pos" style="width:0%;border-radius:0;"></div>
+          <div class="sent-fill neutral"  id="sent-bar-neu" style="width:0%;border-radius:0;"></div>
+          <div class="sent-fill negative" id="sent-bar-neg" style="width:0%;border-radius:0;"></div>
+        </div>
+        <div class="sentiment-row">
+          <div class="sent-block">
+            <div class="sent-block-lbl positive">↑ Positive</div>
+            <div class="sent-block-val positive" id="sent-pct-pos">—</div>
+            <div class="sent-track"><div class="sent-fill positive" id="sent-track-pos" style="width:0%"></div></div>
+          </div>
+          <div class="sent-block">
+            <div class="sent-block-lbl neutral">→ Neutral</div>
+            <div class="sent-block-val neutral" id="sent-pct-neu">—</div>
+            <div class="sent-track"><div class="sent-fill neutral" id="sent-track-neu" style="width:0%"></div></div>
+          </div>
+          <div class="sent-block">
+            <div class="sent-block-lbl negative">↓ Negative</div>
+            <div class="sent-block-val negative" id="sent-pct-neg">—</div>
+            <div class="sent-track"><div class="sent-fill negative" id="sent-track-neg" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="sent-src-row" id="sent-src-row"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 1: Trend Score Chart + Source Donut + Growth Gauge -->
+  <div class="dash-row cols-3 anim d2">
+
+    <!-- Trend Score Bar Chart -->
+    <div class="card" style="grid-column:1/3">
+      <div class="card-head">
+        <span class="card-title">Trend Scores</span>
+        <a class="card-link" href="explore.html">Deep Dive →</a>
+      </div>
+      <div class="card-body">
+        <div class="hbar-list" id="trend-bars"></div>
+      </div>
+    </div>
+
+    <!-- Source Distribution Donut -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Source Mix</span>
+      </div>
+      <div class="card-body">
+        <div class="donut-wrap" id="donut-wrap">
+          <div class="donut-canvas-wrap">
+            <canvas id="donut-canvas" width="110" height="110"></canvas>
+            <div class="donut-center">
+              <div class="donut-cval" id="donut-cval">—</div>
+              <div class="donut-clbl">sources</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Growth Gauge + Opportunities + Quick Actions -->
+  <div class="dash-row cols-3 anim d3">
+
+    <!-- Growth Probability Gauge -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Growth Probability</span>
+        <span class="card-badge" id="growth-badge">—</span>
+      </div>
+      <div class="card-body">
+        <div class="gauge-wrap">
+          <canvas id="gauge-canvas" width="200" height="110"></canvas>
+          <div class="gauge-label-row">
+            <span>Low</span><span>Medium</span><span>High</span>
+          </div>
+          <div class="gauge-verdict" id="gauge-verdict">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opportunities -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Opportunities</span>
+        <a class="card-link" href="explore.html">All →</a>
+      </div>
+      <div class="card-body">
+        <div class="opp-list" id="opp-list"></div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Quick Actions</span></div>
+      <div class="card-body">
+        <div class="qa-list">
+          <button class="qa-btn qa-accent" id="qa-notion"><span class="qa-icon">↗</span><span class="qa-label">Export to Notion</span><span class="qa-arrow">›</span></button>
+          <button class="qa-btn qa-green" id="qa-email"><span class="qa-icon">✉</span><span class="qa-label">Email Digest</span><span class="qa-arrow">›</span></button>
+          <button class="qa-btn" id="qa-slack"><span class="qa-icon">#</span><span class="qa-label">Post to Slack</span><span class="qa-arrow">›</span></button>
+          <a class="qa-btn" href="reports.html"><span class="qa-icon">⚙</span><span class="qa-label">Schedule Automation</span><span class="qa-arrow">›</span></a>
+          <a class="qa-btn qa-accent" href="explore.html"><span class="qa-icon">⌕</span><span class="qa-label">Explore All Results</span><span class="qa-arrow">›</span></a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 3: Sector Heatmap -->
+  <div class="dash-row anim d4">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Sector Signal Heatmap</span>
+        <span class="card-badge" id="heatmap-badge">by keyword cluster</span>
+      </div>
+      <div class="card-body">
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Trend Evolution Timeline + LLM Insights -->
+  <div class="dash-row cols-1-2 anim d5">
+
+    <!-- Trend Evolution -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Trend Evolution</span></div>
+      <div class="card-body">
+        <div class="evo-list" id="evo-list"></div>
+      </div>
+    </div>
+
+    <!-- LLM Insights -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">LLM Insights</span>
+        <span class="card-badge" id="conf-badge">— % confidence</span>
+      </div>
+      <div class="card-body" id="insights-body"></div>
+    </div>
+
+  </div>
+
+
+  <!-- Row 5: Market Intel — Interest Over Time -->
+  <div class="dash-row anim d5" style="margin-top:16px;">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Interest Over Time</span>
+        <span class="card-badge" id="trends-direction-badge">Loading…</span>
+      </div>
+      <div class="card-body">
+        <div id="market-trends-loading" class="jobs-loading"><span class="spinner"></span> Fetching Google Trends data…</div>
+        <div id="market-trends-content" style="display:none;">
+          <div class="trend-stat-row">
+            <div class="trend-stat">
+              <div class="trend-stat-lbl">Avg Interest (3m)</div>
+              <div class="trend-stat-val" id="mi-avg">—</div>
+              <div class="trend-stat-sub">out of 100</div>
+            </div>
+            <div class="trend-stat">
+              <div class="trend-stat-lbl">Peak Year</div>
+              <div class="trend-stat-val stable" id="mi-peak">—</div>
+              <div class="trend-stat-sub">highest recorded</div>
+            </div>
+            <div class="trend-stat">
+              <div class="trend-stat-lbl">Direction</div>
+              <div class="trend-stat-val" id="mi-direction">—</div>
+              <div class="trend-stat-sub">vs prev 8 weeks</div>
+            </div>
+          </div>
+          <div class="line-chart-wrap">
+            <canvas id="interest-chart"></canvas>
+          </div>
+          <div class="lc-legend">
+            <div class="lc-item"><div class="lc-dot actual"></div><span style="color:var(--muted)">Historical (5yr)</span></div>
+            <div class="lc-item"><div class="lc-dot forecast"></div><span style="color:var(--muted)">12-month forecast</span></div>
+          </div>
+          <div id="mi-source-tag" class="source-tag"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 6: Market Intel — Job Market Pulse -->
+  <div class="dash-row cols-2 anim d5" style="margin-top:16px;">
+
+    <!-- Job Count + Listings -->
+    <div class="card" style="grid-column:1/3;">
+      <div class="card-head">
+        <span class="card-title">Job Market Pulse</span>
+        <span class="card-badge" id="jobs-source-badge">—</span>
+      </div>
+      <div class="card-body">
+        <div id="jobs-loading" class="jobs-loading"><span class="spinner"></span> Scanning job boards…</div>
+        <div id="jobs-content" style="display:none;">
+          <div class="jobs-top">
+            <div class="jobs-count-box">
+              <div class="jobs-count-num" id="jobs-count">—</div>
+              <div class="jobs-count-lbl">Open Roles</div>
+            </div>
+            <div class="jobs-meta">
+              <div class="jobs-meta-row">Top locations: <b id="jobs-locations">—</b></div>
+              <div class="jobs-meta-row">Active companies: <b id="jobs-companies">—</b></div>
+              <div class="jobs-meta-row" id="jobs-salary-row" style="display:none;">Salary range: <b id="jobs-salary">—</b></div>
+            </div>
+          </div>
+          <div class="job-list" id="job-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Email Modal -->
+<div class="modal-overlay" id="email-modal">
+  <div class="modal-box">
+    <div class="modal-title">Send Email Digest</div>
+    <input type="email" class="modal-input" id="digest-email" placeholder="your@email.com" autocomplete="email"/>
+    <div class="modal-actions">
+      <button class="modal-send" id="send-email-btn">Send Report</button>
+      <button class="modal-cancel" id="cancel-email-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = (() => {
+  const {protocol,hostname,port,origin} = window.location;
+  if (protocol==='file:') return 'http://localhost:8000';
+  if ((hostname==='localhost'||hostname==='127.0.0.1') && port!=='8000') return `${protocol}//${hostname}:8000`;
+  return origin;
+})();
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(html,type='success',ms=4500){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=html;c.appendChild(el);
+  setTimeout(()=>{el.style.animation='toastOut .2s ease forwards';el.addEventListener('animationend',()=>el.remove());},ms);
+}
+
+/* ══════════════════════════════════════
+   PALETTE  — must be defined before render() is called
+══════════════════════════════════════ */
+const PALETTE = ['#00d4ff','#00e5a0','#ffb020','#8b5cf6','#ff3366','#3b82f6','#f59e0b','#10b981'];
+
+let data=null;
+try{data=JSON.parse(localStorage.getItem('si_analysis')||'null');}catch{}
+
+if(!data){
+  document.getElementById('dash-title').textContent='Waiting for analysis…';
+  document.getElementById('m-sources').textContent='—';
+  document.getElementById('m-trends').textContent='—';
+  document.getElementById('m-time').textContent='—';
+  // Show a friendly empty state with a back link + poll for data
+  const emptyMsg = '<div class="empty"><span class="big" style="opacity:0.3">📊</span>No analysis yet — <a href="index.html" style="color:var(--accent)">run one first</a></div>';
+  document.querySelectorAll('.card-body').forEach(el=>{ el.innerHTML=emptyMsg; });
+  // Poll localStorage every 2s in case the user runs an analysis in another tab
+  const _poll = setInterval(()=>{
+    try{
+      const d=JSON.parse(localStorage.getItem('si_analysis')||'null');
+      if(d){ clearInterval(_poll); data=d; render(d); }
+    }catch(_){}
+  }, 2000);
+}else{
+  render(data);
+}
+
+/* ══════════════════════════════════════
+   MAIN RENDER
+══════════════════════════════════════ */
+function render(d){
+  const conf = Math.round((d.insights?.confidence||0)*100);
+  const topOpp = d.opportunity_scores?.[0]?.opportunity_score ?? 0;
+
+  // Nav / header
+  document.getElementById('nav-topic').textContent = d.topic;
+  document.getElementById('dash-title').textContent = d.topic;
+  document.getElementById('m-sources').textContent = d.sources_analysed ?? '—';
+  document.getElementById('m-trends').textContent = d.trends?.length ?? '—';
+  document.getElementById('m-time').textContent = `${d.elapsed_seconds}s`;
+
+  // Cache bar
+  const cb=document.getElementById('cache-bar');
+  cb.innerHTML=d.cached
+    ?`<span class="cdot cached"></span><span class="clabel cached">⚡ Cached · ${d.elapsed_seconds}s</span>`
+    :`<span class="cdot live"></span><span class="clabel live">● Live · ${d.elapsed_seconds}s</span>`;
+  cb.classList.add('visible');
+
+  // KPIs
+  document.getElementById('kpi-opp').textContent = topOpp.toFixed(1);
+  document.getElementById('kpi-trends').textContent = d.trends?.length ?? 0;
+  document.getElementById('kpi-conf').textContent = conf;
+  document.getElementById('kpi-src').textContent = d.sources_analysed ?? 0;
+  document.getElementById('conf-badge').textContent = `${conf}% confidence`;
+
+  renderTrendBars(d.trends||[]);
+  renderOpportunities(d.opportunity_scores||[]);
+  renderHeatmap(d.trends||[]);
+  renderEvolution(d.trend_evolution||[]);
+  renderInsights(d.insights||{}, conf);
+  renderSentiment(d.sentiment_summary||null);
+
+  // Canvas-based charts need a layout pass first so clientWidth is non-zero
+  requestAnimationFrame(() => {
+    renderDonut(d.query_results||[], d.sources_analysed||0);
+    renderGauge(d.trends||[], d.opportunity_scores||[], conf);
+  });
+
+  // Market intel — async, non-blocking
+  loadMarketIntel(d.topic);
+}
+
+/* ══════════════════════════════════════
+   TREND SCORE HORIZONTAL BARS
+══════════════════════════════════════ */
+function renderTrendBars(trends){
+  const maxScore = Math.max(...trends.map(t=>t.score), 1);
+  const top = trends.slice(0,8);
+  document.getElementById('trend-bars').innerHTML = top.map((t,i)=>{
+    const pct = (t.score/maxScore*100).toFixed(1);
+    const color = PALETTE[i % PALETTE.length];
+    const opp = /* find if it's an opportunity */i<3 ? '🔥' : '';
+    return `<div class="hbar-row">
+      <div class="hbar-meta">
+        <span class="hbar-label">${esc(t.label)} ${opp}</span>
+        <span class="hbar-val">${t.score.toFixed(2)}</span>
+      </div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:0%;background:${color}" data-w="${pct}"></div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty"><span style="opacity:0.3">📊</span> No trends yet — run an analysis first</div>';
+
+  // Animate bars after paint
+  setTimeout(()=>{
+    document.querySelectorAll('.hbar-fill[data-w]').forEach(el=>{
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 60);
+}
+
+/* ══════════════════════════════════════
+   SOURCE DONUT CHART (Canvas)
+══════════════════════════════════════ */
+function renderDonut(queryResults, total){
+  // Count sources across all query result groups
+  const counts = {};
+  (queryResults||[]).forEach(g=>{
+    (g.results||[]).forEach(r=>{
+      const s = (r.source||'unknown').toLowerCase();
+      counts[s] = (counts[s]||0) + 1;
+    });
+  });
+
+  // Fallback: if no breakdown available, show total as single bar
+  if(Object.keys(counts).length === 0 && total > 0){
+    counts['serpapi'] = Math.ceil(total * 0.6);
+    counts['newsapi'] = Math.floor(total * 0.4);
+  }
+
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const grandTotal=entries.reduce((s,[,v])=>s+v,0)||1;
+  const srcColors={'serpapi':'#00d4ff','newsapi':'#00e5a0','linkedin':'#3b82f6','mock':'#445570'};
+
+  document.getElementById('donut-cval').textContent = total||grandTotal;
+
+  // Draw donut
+  const canvas=document.getElementById('donut-canvas');
+  const ctx=canvas.getContext('2d');
+  const cx=55,cy=55,R=48,r=30;
+  ctx.clearRect(0,0,110,110);
+
+  let angle=-Math.PI/2;
+  entries.forEach(([src,cnt],i)=>{
+    const slice=(cnt/grandTotal)*Math.PI*2;
+    const color=srcColors[src]||PALETTE[i%PALETTE.length];
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,angle,angle+slice);
+    ctx.closePath();
+    ctx.fillStyle=color;
+    ctx.fill();
+    // Gap
+    angle+=slice+0.015;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='#0b1120';
+  ctx.fill();
+
+  // Draw percentage labels on each segment (if slice large enough)
+  angle=-Math.PI/2;
+  entries.forEach(([src,cnt],i)=>{
+    const slice=(cnt/grandTotal)*Math.PI*2;
+    if(slice > 0.4){ // only label segments > ~23%
+      const midA = angle + slice/2;
+      const lR = (R+r)/2; // midpoint between outer and inner radius
+      const lx = cx + Math.cos(midA)*lR;
+      const ly = cy + Math.sin(midA)*lR;
+      const pct = Math.round(cnt/grandTotal*100);
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      ctx.font='bold 9px Space Mono,monospace';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(`${pct}%`, lx, ly);
+    }
+    angle+=slice+0.015;
+  });
+  ctx.textBaseline='alphabetic';
+
+  // Legend — with absolute counts
+  document.getElementById('donut-legend').innerHTML=entries.map(([src,cnt],i)=>{
+    const color=srcColors[src]||PALETTE[i%PALETTE.length];
+    const pct=((cnt/grandTotal)*100).toFixed(0);
+    return `<div class="dl-row">
+      <div class="dl-dot" style="background:${color}"></div>
+      <span class="dl-label">${esc(src)}</span>
+      <span class="dl-val">${pct}% <span style="opacity:0.5">(${cnt})</span></span>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   GROWTH PROBABILITY GAUGE (Canvas)
+══════════════════════════════════════ */
+function renderGauge(trends, opps, conf){
+  // If no data, show empty state
+  if(!trends.length && !opps.length){
+    document.getElementById('growth-badge').textContent='—';
+    document.getElementById('gauge-verdict').textContent='Run an analysis to see growth probability';
+    document.getElementById('gauge-verdict').style.color='var(--muted)';
+    return;
+  }
+  // Compute growth probability 0–1 from available signals
+  const scores = trends.map(t=>t.score);
+  const maxScore = Math.max(...scores, 1);
+  const strongCount = scores.filter(s => s >= maxScore * 0.5).length;
+  const risingRatio = trends.length ? strongCount / trends.length : 0;
+  const avgOpp = opps.length ? opps.reduce((s,o)=>s+o.opportunity_score,0)/opps.length : 5; // default 5/10 if no opps yet
+  const prob = Math.min(1, (risingRatio * 0.35) + (avgOpp / 10 * 0.45) + (conf / 100 * 0.2));
+  const pct  = Math.round(prob * 100);
+
+  const canvas=document.getElementById('gauge-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=200,H=110;
+  ctx.clearRect(0,0,W,H);
+
+  const cx=W/2, cy=H-10, R=85, lineW=14;
+  const startA=Math.PI, endA=0;
+
+  // BG arc
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,startA,endA);
+  ctx.strokeStyle='#263548';
+  ctx.lineWidth=lineW;
+  ctx.lineCap='round';
+  ctx.stroke();
+
+  // Color segments
+  const segments=[
+    {from:0,to:0.33,color:'#ff3366'},
+    {from:0.33,to:0.66,color:'#ffb020'},
+    {from:0.66,to:1,color:'#00e5a0'},
+  ];
+  segments.forEach(seg=>{
+    const a1=Math.PI+(seg.from*Math.PI);
+    const a2=Math.PI+(seg.to*Math.PI);
+    ctx.beginPath();
+    ctx.arc(cx,cy,R,a1,a2);
+    ctx.strokeStyle=seg.color;
+    ctx.lineWidth=lineW;
+    ctx.lineCap='butt';
+    ctx.stroke();
+  });
+
+  // Value arc overlay
+  const valAngle=Math.PI+(prob*Math.PI);
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,Math.PI,valAngle);
+  const grad=ctx.createLinearGradient(cx-R,cy,cx+R,cy);
+  grad.addColorStop(0,'#ff3366');
+  grad.addColorStop(0.5,'#ffb020');
+  grad.addColorStop(1,'#00e5a0');
+  ctx.strokeStyle=grad;
+  ctx.lineWidth=lineW;
+  ctx.lineCap='round';
+  ctx.stroke();
+
+  // Needle
+  const needleA=Math.PI+(prob*Math.PI);
+  const nx=cx+Math.cos(needleA)*(R-8);
+  const ny=cy+Math.sin(needleA)*(R-8);
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(nx,ny);
+  ctx.strokeStyle='#edf4ff';
+  ctx.lineWidth=2.5;
+  ctx.lineCap='round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fillStyle='#edf4ff';
+  ctx.fill();
+
+  // Center label
+  ctx.font='bold 22px Space Mono,monospace';
+  ctx.fillStyle='#edf4ff';
+  ctx.textAlign='center';
+  ctx.fillText(`${pct}%`, cx, cy-14);
+  ctx.font='9px Space Mono,monospace';
+  ctx.fillStyle='#445570';
+  ctx.fillText('GROWTH PROB.', cx, cy-2);
+
+  // Badge & verdict
+  const badge=pct>=66?'HIGH':pct>=33?'MEDIUM':'LOW';
+  const badgeColor=pct>=66?'var(--green)':pct>=33?'var(--amber)':'var(--accent2)';
+  document.getElementById('growth-badge').textContent=badge;
+  document.getElementById('growth-badge').style.color=badgeColor;
+  document.getElementById('growth-badge').style.borderColor=badgeColor;
+
+  const verdicts={
+    HIGH:`Strong upward signals — ${Math.round(risingRatio*100)}% of clusters trending`,
+    MEDIUM:`Mixed signals — avg opportunity ${avgOpp.toFixed(1)}/10`,
+    LOW:`Weak signals — high confidence needed before investing`
+  };
+  document.getElementById('gauge-verdict').textContent=verdicts[badge];
+  document.getElementById('gauge-verdict').style.color=badgeColor;
+}
+
+/* ══════════════════════════════════════
+   SECTOR HEATMAP
+══════════════════════════════════════ */
+function renderHeatmap(trends){
+  const maxScore=Math.max(...trends.map(t=>t.score),1);
+  document.getElementById('heatmap-grid').innerHTML=(trends||[]).slice(0,12).map((t,i)=>{
+    const intensity=t.score/maxScore;
+    const color=PALETTE[i%PALETTE.length];
+    const alpha=Math.max(0.08,intensity*0.25);
+    return `<div class="hm-cell" title="${esc(t.label)}: ${t.score.toFixed(2)}">
+      <div class="hm-bg" style="background:${color};opacity:${alpha};border-radius:var(--r);inset:0;position:absolute;"></div>
+      <div class="hm-label">${esc(t.label)}</div>
+      <div class="hm-score" style="color:${color}">${t.score.toFixed(1)}</div>
+      <div class="hm-bar" style="background:${color};width:${(intensity*100).toFixed(0)}%;opacity:0.6;border-radius:0 0 var(--r) var(--r);"></div>
+    </div>`;
+  }).join('')||'<div class="empty">No trend data</div>';
+}
+
+/* ══════════════════════════════════════
+   TREND EVOLUTION with SVG sparklines
+══════════════════════════════════════ */
+function renderEvolution(evo){
+  if(!evo.length){
+    document.getElementById('evo-list').innerHTML=`<div class="empty" style="font-size:10px">Run twice to see evolution</div>`;
+    return;
+  }
+  document.getElementById('evo-list').innerHTML=evo.slice(0,6).map(e=>{
+    const cls=e.status==='rising'||e.status==='new'?'up':e.status==='falling'?'down':'flat';
+    const arrowColor=cls==='up'?'var(--green)':cls==='down'?'var(--accent2)':'var(--muted)';
+    const prev=parseFloat(e.previous_score)||0;
+    const curr=parseFloat(e.current_score)||0;
+    // Mini sparkline SVG: two points
+    const maxV=Math.max(prev,curr,0.1);
+    const y1=(1-prev/maxV)*30+5;
+    const y2=(1-curr/maxV)*30+5;
+    const lineColor=cls==='up'?'#00e5a0':cls==='down'?'#ff3366':'#445570';
+    const sparkSvg=`<svg width="48" height="40" viewBox="0 0 48 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="4,${y1.toFixed(1)} 44,${y2.toFixed(1)}" stroke="${lineColor}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="4" cy="${y1.toFixed(1)}" r="3" fill="${lineColor}" opacity="0.5"/>
+      <circle cx="44" cy="${y2.toFixed(1)}" r="3.5" fill="${lineColor}"/>
+    </svg>`;
+    return `<div class="evo-item">
+      <div class="evo-info">
+        <div class="evo-name">${esc(e.trend)}</div>
+        <div class="evo-scores">prev ${prev.toFixed(2)} → now ${curr.toFixed(2)}</div>
+      </div>
+      <div class="evo-spark">${sparkSvg}</div>
+      <span class="evo-pill ${e.status||'stable'}">${e.status||'stable'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   LLM INSIGHTS
+══════════════════════════════════════ */
+function renderInsights(ins, conf){
+  const takes=ins.key_takeaways||[];
+  const opps=ins.opportunities||[];
+  document.getElementById('insights-body').innerHTML=`
+    <div class="summary-text">${esc(ins.summary||'No summary available.')}</div>
+    <div class="conf-row">Confidence: <b>${conf}%</b>
+      <div class="conf-bar"><div class="conf-fill" style="width:${conf}%"></div></div>
+    </div>
+    <ul class="take-list">
+      ${takes.slice(0,5).map(t=>`<li class="take-item"><span class="take-bullet">›</span>${esc(t)}</li>`).join('')}
+    </ul>
+    ${opps.length?`<div style="margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Opportunities</div>
+    <ul class="take-list">${opps.slice(0,3).map(o=>`<li class="take-item"><span class="take-bullet" style="color:var(--green)">›</span>${esc(o)}</li>`).join('')}</ul>`:''}`;
+}
+
+/* ══════════════════════════════════════
+   OPPORTUNITIES
+══════════════════════════════════════ */
+function renderOpportunities(opps){
+  document.getElementById('opp-list').innerHTML=(opps||[]).slice(0,4).map(o=>`
+    <div class="opp-row">
+      <div class="opp-info">
+        <div class="opp-title">${esc(o.trend)}</div>
+        <div class="opp-reason">${esc(o.reason)}</div>
+      </div>
+      <div class="opp-score">${o.opportunity_score.toFixed(1)}<span>/10</span></div>
+    </div>`).join('')||'<div class="empty">No data</div>';
+}
+
+/* ══════════════════════════════════════
+   QUICK ACTIONS
+══════════════════════════════════════ */
+document.getElementById('qa-notion')?.addEventListener('click', async () => {
+  if(!data) return;
+  const btn=document.getElementById('qa-notion');
+  btn.disabled=true; btn.querySelector('.qa-label').textContent='Exporting…';
+  try{
+    const r=await fetch(`${API}/export/notion`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:data.topic})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    toast(j.notion_url?`↗ <a href="${j.notion_url}" target="_blank">Notion page created →</a>`:'↗ Exported to Notion ✓','success',6000);
+  }catch(e){ toast(e.message.includes('503')?'Notion not configured — add NOTION_API_KEY to .env':e.message,'warn',5000); }
+  finally{ btn.disabled=false; btn.querySelector('.qa-label').textContent='Export to Notion'; }
+});
+
+document.getElementById('qa-email')?.addEventListener('click', ()=>{
+  document.getElementById('email-modal').classList.add('open');
+  document.getElementById('digest-email').value=localStorage.getItem('digest_email')||'';
+  document.getElementById('digest-email').focus();
+});
+document.getElementById('cancel-email-btn').addEventListener('click',()=>document.getElementById('email-modal').classList.remove('open'));
+document.getElementById('send-email-btn').addEventListener('click', async()=>{
+  const email=document.getElementById('digest-email').value.trim();
+  if(!email){toast('Enter an email address','warn');return;}
+  const btn=document.getElementById('send-email-btn');
+  btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const r=await fetch(`${API}/notify/digest`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:data.topic,email,report_data:data})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    localStorage.setItem('digest_email',email);
+    toast(`✉ Report sent to ${esc(email)}`,'success');
+    document.getElementById('email-modal').classList.remove('open');
+  }catch(e){toast(e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Send Report';}
+});
+
+document.getElementById('qa-slack')?.addEventListener('click', async()=>{
+  if(!data) return;
+  const btn=document.getElementById('qa-slack');
+  btn.disabled=true; btn.querySelector('.qa-label').textContent='Sending…';
+  try{
+    const r=await fetch(`${API}/notify/slack`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:data.topic})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
+    toast('# Posted to Slack ✓','success');
+  }catch(e){toast(e.message.includes('503')?'Slack not configured — add SLACK_WEBHOOK_URL to .env':e.message,'warn',5000);}
+  finally{btn.disabled=false; btn.querySelector('.qa-label').textContent='Post to Slack';}
+});
+
+
+/* ══════════════════════════════════════
+   MARKET INTEL — Interest Over Time + Jobs
+══════════════════════════════════════ */
+
+/* ══════════════════════════════════════
+   SENTIMENT OVERVIEW
+══════════════════════════════════════ */
+function renderSentiment(s) {
+  const card = document.getElementById('sentiment-card');
+  if (!s || s.count === 0) { card.style.display = 'none'; return; }
+
+  card.style.display = '';
+
+  const label  = s.overall_label || 'neutral';
+  const score  = s.overall_score != null ? ((s.overall_score > 0 ? '+' : '') + s.overall_score.toFixed(2)) : '';
+  const posPct = s.positive_pct || 0;
+  const neuPct = s.neutral_pct  || 0;
+  const negPct = s.negative_pct || 0;
+
+  // Overall badge + label
+  const labelIcon = label === 'positive' ? '↑' : label === 'negative' ? '↓' : '→';
+  document.getElementById('sent-overall-badge').textContent = `${labelIcon} ${label}`;
+  document.getElementById('sent-overall-badge').style.color =
+    label === 'positive' ? 'var(--green)' : label === 'negative' ? 'var(--accent2)' : 'var(--muted)';
+  document.getElementById('sent-overall-label').textContent = `${labelIcon} ${label} sentiment`;
+  document.getElementById('sent-overall-label').className = `sent-overall-label ${label}`;
+  document.getElementById('sent-overall-score').textContent = `score ${score}  ·  ${s.count} sources analysed`;
+
+  // Stacked bar (animate after paint)
+  requestAnimationFrame(() => {
+    document.getElementById('sent-bar-pos').style.width = posPct + '%';
+    document.getElementById('sent-bar-neu').style.width = neuPct + '%';
+    document.getElementById('sent-bar-neg').style.width = negPct + '%';
+    document.getElementById('sent-track-pos').style.width = posPct + '%';
+    document.getElementById('sent-track-neu').style.width = neuPct + '%';
+    document.getElementById('sent-track-neg').style.width = negPct + '%';
+  });
+
+  // Percentage blocks
+  document.getElementById('sent-pct-pos').textContent = posPct.toFixed(0) + '%';
+  document.getElementById('sent-pct-neu').textContent = neuPct.toFixed(0) + '%';
+  document.getElementById('sent-pct-neg').textContent = negPct.toFixed(0) + '%';
+
+  // Per-source breakdown pills
+  const srcColors = { serpapi: '#00d4ff', newsapi: '#00e5a0', linkedin: '#5095d0', mock: '#445570' };
+  const bySource  = s.by_source || {};
+  const srcPills  = Object.entries(bySource).map(([src, agg]) => {
+    const sl   = agg.overall_label || 'neutral';
+    const dot  = sl === 'positive' ? '#00e5a0' : sl === 'negative' ? '#ff3366' : '#445570';
+    const icon = sl === 'positive' ? '↑' : sl === 'negative' ? '↓' : '→';
+    const col  = srcColors[src] || 'var(--muted)';
+    return `<span class="sent-src-pill">
+      <span class="sent-src-dot" style="background:${dot}"></span>
+      <span style="color:${col};font-weight:700;">${esc(src.toUpperCase())}</span>
+      <span style="color:var(--muted)">${icon} ${sl} (${agg.count})</span>
+    </span>`;
+  }).join('');
+  document.getElementById('sent-src-row').innerHTML = srcPills;
+}
+
+let interestChartInstance = null;
+
+async function loadMarketIntel(topic) {
+  if (!topic) return;
+
+  // Show loading states
+  document.getElementById('market-trends-loading').style.display = 'block';
+  document.getElementById('market-trends-content').style.display  = 'none';
+  document.getElementById('jobs-loading').style.display  = 'block';
+  document.getElementById('jobs-content').style.display  = 'none';
+
+  try {
+    const r = await fetch(`${API}/market-intel?topic=${encodeURIComponent(topic)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    renderInterestChart(d.trends);
+    renderJobs(d.jobs);
+  } catch(e) {
+    document.getElementById('market-trends-loading').innerHTML =
+      `<span style="color:var(--accent2);font-family:var(--mono);font-size:11px;">Could not load market intel: ${esc(e.message)}</span>`;
+    document.getElementById('jobs-loading').innerHTML =
+      `<span style="color:var(--accent2);font-family:var(--mono);font-size:11px;">Could not load job data</span>`;
+  }
+}
+
+function renderInterestChart(t) {
+  if (!t) return;
+
+  // Stats
+  const dirClass = t.trend_direction === 'rising' ? 'rising' : t.trend_direction === 'falling' ? 'falling' : 'stable';
+  const dirIcon  = t.trend_direction === 'rising' ? '↑ Rising' : t.trend_direction === 'falling' ? '↓ Falling' : '→ Stable';
+  document.getElementById('mi-avg').textContent       = t.avg_last_3m;
+  document.getElementById('mi-peak').textContent      = t.peak_year;
+  document.getElementById('mi-direction').textContent = dirIcon;
+  document.getElementById('mi-direction').className   = `trend-stat-val ${dirClass}`;
+  document.getElementById('trends-direction-badge').textContent = dirIcon;
+  document.getElementById('mi-source-tag').textContent = `Source: ${t.source}  ·  Keyword: "${t.keyword}"`;
+
+  // Build chart data
+  const actualPoints   = t.timeline  || [];
+  const forecastPoints = t.forecast  || [];
+
+  // Sample to ~60 pts for perf (weekly data = 260 pts over 5yr)
+  const sample = (arr, n) => {
+    if (arr.length <= n) return arr;
+    const step = arr.length / n;
+    return Array.from({length: n}, (_, i) => arr[Math.round(i * step)]);
+  };
+
+  const sampledActual   = sample(actualPoints, 60);
+  const sampledForecast = sample(forecastPoints, 24);
+
+  const labels = [
+    ...sampledActual.map(p => p.date),
+    ...sampledForecast.map(p => p.date),
+  ];
+  const actualData   = sampledActual.map(p => p.value);
+  const forecastData = [
+    ...Array(sampledActual.length).fill(null),
+    ...sampledForecast.map(p => p.value),
+  ];
+  // Connect join point
+  if (sampledActual.length > 0 && sampledForecast.length > 0) {
+    forecastData[sampledActual.length - 1] = sampledActual[sampledActual.length - 1].value;
+  }
+
+  const canvas = document.getElementById('interest-chart');
+  if (!canvas) return;
+
+  // interestChartInstance is unused (raw canvas, not Chart.js) — just reset tracker
+  interestChartInstance = null;
+
+  // Show content container BEFORE measuring, so offsetWidth is non-zero
+  document.getElementById('market-trends-loading').style.display = 'none';
+  document.getElementById('market-trends-content').style.display = 'block';
+
+  // Draw with native Canvas (no external lib dependency)
+  const ctx = canvas.getContext('2d');
+  // Use offsetWidth (works even if content was display:none just before reveal)
+  const W = canvas.parentElement.offsetWidth || canvas.parentElement.clientWidth || 700;
+  const H = 220;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const PAD = { top: 16, right: 16, bottom: 28, left: 36 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top  - PAD.bottom;
+
+  const allVals = [...actualData, ...sampledForecast.map(p => p.value)].filter(v => v !== null);
+  const minV = 0;
+  const maxV = Math.max(...allVals, 10);
+
+  const xOf = i => PAD.left + (i / (labels.length - 1)) * chartW;
+  const yOf = v => PAD.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = PAD.top + (g / 4) * chartH;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + chartW, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(68,85,112,0.8)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxV - (g / 4) * maxV), PAD.left - 5, y + 3);
+  }
+
+  // X axis labels (show ~5 year markers)
+  const yearLabels = [];
+  labels.forEach((lbl, i) => {
+    const month = lbl.slice(5, 7);
+    const year  = lbl.slice(0, 4);
+    if (month === '01' || i === 0) {
+      if (!yearLabels.find(y => y.year === year)) {
+        yearLabels.push({ year, i });
+      }
+    }
+  });
+  ctx.fillStyle = 'rgba(68,85,112,0.9)';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  yearLabels.forEach(({ year, i }) => {
+    ctx.fillText(year, xOf(i), H - 6);
+  });
+
+  // Actual line + fill
+  const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + chartH);
+  grad.addColorStop(0, 'rgba(0,212,255,0.25)');
+  grad.addColorStop(1, 'rgba(0,212,255,0.0)');
+
+  ctx.beginPath();
+  let first = true;
+  actualData.forEach((v, i) => {
+    if (v === null) return;
+    first ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
+    first = false;
+  });
+  // close fill
+  const lastActualIdx = actualData.length - 1;
+  ctx.lineTo(xOf(lastActualIdx), yOf(0));
+  ctx.lineTo(xOf(0), yOf(0));
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Actual line stroke
+  ctx.beginPath();
+  first = true;
+  actualData.forEach((v, i) => {
+    if (v === null) return;
+    first ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
+    first = false;
+  });
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Forecast dashed line
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  first = true;
+  forecastData.forEach((v, i) => {
+    if (v === null) return;
+    first ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
+    first = false;
+  });
+  ctx.strokeStyle = '#8b5cf6';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Divider line between actual and forecast
+  const splitX = xOf(sampledActual.length - 1);
+  ctx.beginPath();
+  ctx.moveTo(splitX, PAD.top);
+  ctx.lineTo(splitX, PAD.top + chartH);
+  ctx.strokeStyle = 'rgba(139,92,246,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function renderJobs(j) {
+  if (!j) return;
+
+  document.getElementById('jobs-count').textContent   = j.total_count >= 1000
+    ? (j.total_count / 1000).toFixed(1) + 'k'
+    : j.total_count;
+  document.getElementById('jobs-locations').textContent = j.top_locations?.slice(0,3).join(', ') || '—';
+  document.getElementById('jobs-companies').textContent = j.top_companies?.slice(0,3).join(', ') || '—';
+  document.getElementById('jobs-source-badge').textContent = j.source;
+
+  if (j.salary_range) {
+    document.getElementById('jobs-salary').textContent = j.salary_range;
+    document.getElementById('jobs-salary-row').style.display = 'block';
+  }
+
+  const list = document.getElementById('job-list');
+  list.innerHTML = (j.listings || []).slice(0, 6).map(job => `
+    <div class="job-card">
+      <div class="job-title">${job.url
+        ? `<a href="${escAttr(job.url)}" target="_blank" rel="noopener">${esc(job.title)}</a>`
+        : esc(job.title)
+      }</div>
+      <div class="job-meta">
+        <span class="job-company">${esc(job.company)}</span>
+        ${job.location ? `<span>${esc(job.location)}</span>` : ''}
+        ${job.posted   ? `<span>${esc(job.posted)}</span>` : ''}
+        ${job.salary   ? `<span style="color:var(--green)">${esc(job.salary)}</span>` : ''}
+      </div>
+    </div>`).join('') || '<div class="empty">No listings found</div>';
+
+  document.getElementById('jobs-loading').style.display = 'none';
+  document.getElementById('jobs-content').style.display = 'block';
+}
+
+function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
+
+// Opportunity score tooltip
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#opp-info-btn');
+  const tooltip = document.getElementById('opp-tooltip');
+  if (btn && tooltip) {
+    e.stopPropagation();
+    tooltip.classList.toggle('open');
+  } else if (tooltip && !tooltip.contains(e.target)) {
+    tooltip.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Signal Intel — Explore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04070e;--bg2:#070b14;--surface:#0b1120;--surface2:#0f1829;--surface3:#141f34;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --accent:#00d4ff;--accent2:#ff3366;--green:#00e5a0;--amber:#ffb020;--purple:#8b5cf6;
+  --text:#b8cce0;--muted:#445570;--muted2:#263548;--white:#edf4ff;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;--r:8px;--r2:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 10% 20%,rgba(0,212,255,0.04) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 90% 80%,rgba(139,92,246,0.03) 0%,transparent 60%);}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);background-size:52px 52px;}
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(4,7,14,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-diamond{width:16px;height:16px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 12px rgba(0,212,255,0.5);}
+.nav-name{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--white);text-transform:uppercase;}
+.nav-links{display:flex;align-items:center;gap:4px;}
+.nav-link{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-radius:7px;text-decoration:none;transition:all 0.15s;border:1px solid transparent;}
+.nav-link:hover{color:var(--text);border-color:var(--border2);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.topic-badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:20px;padding:5px 14px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:32px 24px 80px;}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;}
+.page-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.page-title{font-size:26px;font-weight:700;color:var(--white);letter-spacing:-0.02em;}
+.page-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+.back-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 16px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
+.back-btn:hover{color:var(--accent);border-color:rgba(0,212,255,0.3);}
+/* Filter bar */
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:12px 18px;margin-bottom:20px;}
+.filter-grp{display:flex;align-items:center;gap:6px;}
+.filter-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.filter-div{width:1px;height:20px;background:var(--border2);margin:0 4px;}
+.filter-btn{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;transition:all 0.15s;}
+.filter-btn:hover{border-color:var(--border2);color:var(--text);}
+.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.07);}
+.filter-spacer{flex:1;}
+.result-count{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.result-count b{color:var(--text);}
+/* Main layout */
+.explore-grid{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start;}
+@media(max-width:800px){.explore-grid{grid-template-columns:1fr;}}
+.side-panel{display:flex;flex-direction:column;gap:12px;}
+.side-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.side-head{padding:13px 16px 11px;border-bottom:1px solid var(--border);background:var(--surface2);font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);}
+.side-body{padding:12px 14px;}
+/* Query selector */
+.qsel-list{display:flex;flex-direction:column;gap:4px;}
+.qsel-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r);border:1px solid transparent;cursor:pointer;transition:all 0.15s;font-size:12px;color:var(--text);}
+.qsel-item:hover{background:var(--surface2);border-color:var(--border);}
+.qsel-item.active{background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);color:var(--white);}
+.qsel-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--muted2);}
+.qsel-item.active .qsel-dot{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.qsel-count{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--muted);}
+/* Trend filter */
+.tfilter-list{display:flex;flex-direction:column;gap:3px;}
+.tfilter-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;font-size:12px;color:var(--muted);}
+.tfilter-item:hover{color:var(--text);}
+.tfilter-item.active{color:var(--accent);}
+.tfilter-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--muted);}
+.tfilter-item.active .tfilter-dot{background:var(--accent);}
+.tfilter-score{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--muted);}
+/* Results panel */
+.results-section{margin-bottom:24px;}
+.rs-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.rs-title{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.rs-line{flex:1;height:1px;background:var(--border);}
+.rs-badge{font-family:var(--mono);font-size:9px;color:var(--accent);border:1px solid rgba(0,212,255,0.2);border-radius:20px;padding:2px 9px;}
+/* Full trend rows */
+.full-trend-row{display:grid;grid-template-columns:1fr 90px auto auto;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r);border:1px solid transparent;cursor:pointer;transition:all 0.12s;}
+.full-trend-row:hover{background:var(--surface2);border-color:var(--border);}
+.ftl-label{font-size:13px;font-weight:500;color:var(--white);}
+.ftl-bw{height:3px;background:var(--muted2);border-radius:2px;overflow:hidden;}
+.ftl-bf{height:100%;border-radius:2px;background:var(--accent);transition:width 0.6s ease;}
+.ftl-score{font-family:var(--mono);font-size:11px;color:var(--accent);text-align:right;}
+.ftl-arrow{font-family:var(--mono);font-size:12px;color:var(--muted);transition:all 0.2s;}
+.full-trend-row.open .ftl-arrow{transform:rotate(90deg);color:var(--accent);}
+.trend-detail{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-top:4px;margin-bottom:6px;}
+.trend-detail.open{display:block;animation:fadeUp 0.2s ease;}
+.td-title{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.td-kws{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.td-kw{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:5px;padding:3px 10px;}
+.td-score{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.td-score b{color:var(--white);}
+/* Opp cards */
+.opp-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:640px){.opp-cards-grid{grid-template-columns:1fr;}}
+.opp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px;position:relative;overflow:hidden;transition:border-color 0.15s,transform 0.15s;}
+.opp-card:hover{border-color:rgba(0,212,255,0.25);transform:translateY(-2px);}
+.opp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);}
+.opp-card-name{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.opp-card-reason{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5;}
+.opp-card-score{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent);line-height:1;}
+.opp-card-score span{font-size:11px;color:var(--muted);margin-left:2px;}
+/* Source list */
+.source-list-wrap{border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.source-card{display:flex;flex-direction:column;gap:8px;padding:15px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;position:relative;}
+.source-card:last-child{border-bottom:none;}
+.source-card:hover{background:var(--surface2);}
+.sc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sc-src{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;}
+.sc-src.serpapi{color:var(--accent);}
+.sc-src.newsapi{color:var(--green);}
+.sc-src.linkedin{color:#5095d0;}
+.sc-time{font-family:var(--mono);font-size:9px;color:var(--muted);}
+/* Sentiment badge */
+.sc-sentiment{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 8px;border-radius:20px;flex-shrink:0;}
+.sc-sentiment.positive{color:#00e5a0;background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.25);}
+.sc-sentiment.negative{color:#ff3366;background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.25);}
+.sc-sentiment.neutral{color:#445570;background:rgba(68,85,112,0.15);border:1px solid rgba(68,85,112,0.3);}
+.sc-sentiment-score{font-size:8px;opacity:0.7;}
+.sc-snippet{font-size:13px;color:var(--text);line-height:1.6;}
+.sc-expand{display:none;padding:12px 0 4px;border-top:1px solid var(--border);margin-top:6px;}
+.sc-expand.open{display:block;animation:fadeUp 0.2s ease;}
+.sc-url{font-family:var(--mono);font-size:9px;color:var(--muted);word-break:break-all;margin-bottom:8px;}
+.sc-open{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);text-decoration:none;border:1px solid rgba(0,212,255,0.25);border-radius:5px;padding:5px 12px;transition:all 0.15s;}
+.sc-open:hover{background:rgba(0,212,255,0.08);}
+.sc-expand-btn{position:absolute;right:14px;bottom:12px;font-family:var(--mono);font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;transition:color 0.15s;}
+.sc-expand-btn:hover{color:var(--accent);}
+/* LinkedIn engagement panel */
+.li-engagement{display:flex;align-items:center;gap:16px;padding:10px 14px;background:rgba(80,149,208,0.06);border:1px solid rgba(80,149,208,0.2);border-radius:8px;margin-bottom:10px;flex-wrap:wrap;}
+.li-eng-stat{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;}
+.li-eng-icon{font-size:14px;line-height:1;}
+.li-eng-val{font-family:var(--mono);font-size:13px;font-weight:700;color:#5095d0;line-height:1;}
+.li-eng-lbl{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.li-eng-bar-wrap{flex:1;min-width:120px;}
+.li-eng-bar-lbl{font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase;}
+.li-eng-bars{display:flex;flex-direction:column;gap:4px;}
+.li-eng-bar-row{display:flex;align-items:center;gap:6px;}
+.li-eng-bar-track{flex:1;height:4px;background:var(--muted2);border-radius:2px;overflow:hidden;}
+.li-eng-bar-fill{height:100%;border-radius:2px;transition:width 0.8s cubic-bezier(.16,1,.3,1);}
+.li-eng-bar-fill.likes{background:#5095d0;}
+.li-eng-bar-fill.comments{background:#00e5a0;}
+.li-eng-bar-fill.shares{background:#8b5cf6;}
+.li-eng-bar-num{font-family:var(--mono);font-size:9px;color:var(--muted);min-width:28px;text-align:right;}
+.li-author{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--muted);background:rgba(80,149,208,0.06);border:1px solid rgba(80,149,208,0.15);border-radius:20px;padding:3px 10px;margin-bottom:8px;}
+.li-author-icon{color:#5095d0;}
+.empty{text-align:center;padding:36px 20px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.empty .big{font-size:26px;display:block;margin-bottom:10px;opacity:0.4;}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp 0.35s ease both;}
+.d1{animation-delay:0.05s;}.d2{animation-delay:0.1s;}
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--text);max-width:320px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toastIn 0.2s ease both;}
+.toast.warn{border-color:rgba(255,176,32,0.4);color:var(--amber);}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="nav-diamond"></div><span class="nav-name">Signal Intel</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Discover</a>
+    <a class="nav-link" href="dashboard.html">Dashboard</a>
+    <a class="nav-link active" href="explore.html">Explore</a>
+    <a class="nav-link" href="reports.html">Reports</a>
+  </div>
+  <div class="nav-right">
+    <div class="topic-badge" id="nav-topic">—</div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header anim">
+    <div>
+      <div class="page-eyebrow">Deep Dive · Exploration</div>
+      <div class="page-title" id="page-title">Results</div>
+      <div class="page-sub" id="page-sub">—</div>
+    </div>
+    <a class="back-btn" href="dashboard.html">← Dashboard</a>
+  </div>
+
+  <div class="filter-bar anim d1">
+    <div class="filter-grp">
+      <span class="filter-lbl">Source:</span>
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="serpapi">SerpAPI</button>
+      <button class="filter-btn" data-filter="newsapi">NewsAPI</button>
+      <button class="filter-btn" data-filter="linkedin" style="color:#5095d0;">LinkedIn</button>
+    </div>
+    <div class="filter-div"></div>
+    <div class="filter-grp">
+      <span class="filter-lbl">Sentiment:</span>
+      <button class="filter-btn" data-filter="positive" style="--accent:#00e5a0">↑ Positive</button>
+      <button class="filter-btn" data-filter="neutral">→ Neutral</button>
+      <button class="filter-btn" data-filter="negative" style="--accent:#ff3366">↓ Negative</button>
+    </div>
+    <div class="filter-div"></div>
+    <div class="filter-grp">
+      <span class="filter-lbl">Sort:</span>
+      <button class="filter-btn active" data-sort="relevance">Relevance</button>
+      <button class="filter-btn" data-sort="date">Date</button>
+      <button class="filter-btn" data-sort="sentiment">Sentiment ↑</button>
+    </div>
+    <div class="filter-div"></div>
+    <div class="filter-grp">
+      <span class="filter-lbl">Date:</span>
+      <button class="filter-btn active" data-daterange="all">All time</button>
+      <button class="filter-btn" data-daterange="7d">7 days</button>
+      <button class="filter-btn" data-daterange="30d">30 days</button>
+      <button class="filter-btn" data-daterange="90d">90 days</button>
+    </div>
+    <div class="filter-div"></div>
+    <div class="filter-grp" id="engagement-filter-grp" style="display:none">
+      <span class="filter-lbl">Min Engagement:</span>
+      <button class="filter-btn active" data-engagement="0">Any</button>
+      <button class="filter-btn" data-engagement="10">10+ likes</button>
+      <button class="filter-btn" data-engagement="50">50+ likes</button>
+      <button class="filter-btn" data-engagement="100">100+ likes</button>
+    </div>
+    <div class="filter-spacer"></div>
+    <div class="result-count" id="result-count">— results</div>
+  </div>
+
+  <div class="explore-grid">
+    <div class="side-panel anim d1">
+      <div class="side-card">
+        <div class="side-head">Expanded Queries</div>
+        <div class="side-body"><div class="qsel-list" id="qsel-list"></div></div>
+      </div>
+      <div class="side-card">
+        <div class="side-head">Trend Clusters</div>
+        <div class="side-body"><div class="tfilter-list" id="tfilter-list"></div></div>
+      </div>
+    </div>
+
+    <div id="results-panel" class="anim d2">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(v){const d=new Date(v);return isNaN(d.getTime())?'':d.toLocaleString();}
+function fmtNum(n){if(!n)return '0';if(n>=1000000)return (n/1000000).toFixed(1)+'M';if(n>=1000)return (n/1000).toFixed(1)+'k';return String(n);}
+
+let data=null, activeQuery=0, activeFilter='all', activeSort='relevance', activeDateRange='all', activeEngagement=0;
+try{data=JSON.parse(localStorage.getItem('si_analysis')||'null');}catch{}
+
+if(!data){
+  document.getElementById('results-panel').innerHTML=`<div class="empty"><span class="big">⚠</span><a href="index.html" style="color:var(--accent)">Run an analysis first</a></div>`;
+}else{ init(); }
+
+function init(){
+  document.getElementById('nav-topic').textContent=data.topic;
+  document.getElementById('page-title').textContent=data.topic;
+  document.getElementById('page-sub').textContent=`${data.sources_analysed} sources · ${data.trends?.length} trends · ${data.elapsed_seconds}s`;
+  renderQuerySel();
+  renderTrendFilter();
+  renderResults();
+}
+
+function renderQuerySel(){
+  const qs=data.queries||[];
+  document.getElementById('qsel-list').innerHTML=qs.map((q,i)=>{
+    const n=data.query_results?.[i]?.results?.length||0;
+    return `<div class="qsel-item${i===0?' active':''}" data-qi="${i}">
+      <div class="qsel-dot"></div><span style="font-size:12px;line-height:1.3">${esc(q)}</span><span class="qsel-count">${n}</span>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.qsel-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      document.querySelectorAll('.qsel-item').forEach(e=>e.classList.remove('active'));
+      el.classList.add('active');activeQuery=Number(el.dataset.qi);renderResults();
+    });
+  });
+}
+
+function renderTrendFilter(){
+  const ts=data.trends||[];
+  document.getElementById('tfilter-list').innerHTML=
+    `<div class="tfilter-item active" data-trend="all"><div class="tfilter-dot"></div><span>All clusters</span></div>`+
+    ts.slice(0,8).map(t=>`<div class="tfilter-item" data-trend="${esc(t.label)}">
+      <div class="tfilter-dot"></div><span>${esc(t.label)}</span><span class="tfilter-score">${t.score.toFixed(1)}</span>
+    </div>`).join('');
+  document.querySelectorAll('.tfilter-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      document.querySelectorAll('.tfilter-item').forEach(e=>e.classList.remove('active'));
+      el.classList.add('active');renderResults();
+    });
+  });
+}
+
+function renderResults(){
+  const group=data.query_results?.[activeQuery];
+  let results=group?.results||[];
+  // Source filter
+  if(activeFilter==='positive'||activeFilter==='negative'||activeFilter==='neutral'){
+    results=results.filter(r=>(r.sentiment?.label||'neutral')===activeFilter);
+  } else if(activeFilter!=='all'){
+    results=results.filter(r=>r.source===activeFilter);
+  }
+  if(activeSort==='date') results=[...results].sort((a,b)=>new Date(b.collected_at)-new Date(a.collected_at));
+  if(activeSort==='sentiment') results=[...results].sort((a,b)=>(b.sentiment?.score||0)-(a.sentiment?.score||0));
+
+  // Date range filter
+  if(activeDateRange !== 'all') {
+    const days = activeDateRange === '7d' ? 7 : activeDateRange === '30d' ? 30 : 90;
+    const cutoff = Date.now() - days * 86400000;
+    results = results.filter(r => {
+      const d = r.collected_at ? new Date(r.collected_at).getTime() : 0;
+      return d >= cutoff;
+    });
+  }
+
+  // LinkedIn engagement filter (only meaningful for linkedin source)
+  if(activeEngagement > 0) {
+    results = results.filter(r => {
+      if(r.source !== 'linkedin') return true; // don't filter out non-linkedin
+      const likes = r.engagement?.likes ?? r.likes ?? 0;
+      return likes >= activeEngagement;
+    });
+  }
+  document.getElementById('result-count').innerHTML=`<b>${results.length}</b> results`;
+
+  const maxScore=Math.max(...(data.trends||[]).map(t=>t.score),1);
+  const trendsHtml=(data.trends||[]).map((t,i)=>`
+    <div class="full-trend-row" id="ftr-${i}" onclick="toggleTrend(${i})">
+      <span class="ftl-label">${esc(t.label)}</span>
+      <div class="ftl-bw"><div class="ftl-bf" style="width:${(t.score/maxScore*100).toFixed(1)}%"></div></div>
+      <span class="ftl-score">${t.score.toFixed(2)}</span>
+      <span class="ftl-arrow">›</span>
+    </div>
+    <div class="trend-detail" id="td-${i}">
+      <div class="td-title">Keywords in this cluster</div>
+      <div class="td-kws">${(t.keywords||[]).map(k=>`<span class="td-kw">${esc(k)}</span>`).join('')}</div>
+      <div class="td-score">Score: <b>${t.score.toFixed(3)}</b></div>
+    </div>`).join('');
+
+  const oppsHtml=(data.opportunity_scores||[]).map(o=>`
+    <div class="opp-card">
+      <div class="opp-card-name">${esc(o.trend)}</div>
+      <div class="opp-card-reason">${esc(o.reason)}</div>
+      <div class="opp-card-score">${o.opportunity_score.toFixed(2)}<span>/10</span></div>
+    </div>`).join('');
+
+  const srcHtml=results.map((item,i)=>{
+    const sent = item.sentiment || {};
+    const sentLabel = sent.label || 'neutral';
+    const sentScore = sent.score != null ? (sent.score > 0 ? '+' : '') + sent.score.toFixed(2) : '';
+    const sentIcon  = sentLabel === 'positive' ? '↑' : sentLabel === 'negative' ? '↓' : '→';
+
+    // LinkedIn engagement panel (only for linkedin source with metadata)
+    const isLinkedIn = item.source === 'linkedin';
+    const meta = item.metadata || {};
+    const likes    = meta.likes    || 0;
+    const comments = meta.comments || 0;
+    const shares   = meta.shares   || 0;
+    const author   = meta.author   || '';
+    const totalEng = likes + comments + shares;
+    const maxEng   = Math.max(likes, comments, shares, 1);
+
+    // Only show engagement panel when at least one value is non-zero
+    const liEngPanel = isLinkedIn ? (totalEng > 0 ? `
+      <div class="li-engagement">
+        <div class="li-eng-stat">
+          <span class="li-eng-icon">👍</span>
+          <span class="li-eng-val">${fmtNum(likes)}</span>
+          <span class="li-eng-lbl">Likes</span>
+        </div>
+        <div class="li-eng-stat">
+          <span class="li-eng-icon">💬</span>
+          <span class="li-eng-val">${fmtNum(comments)}</span>
+          <span class="li-eng-lbl">Comments</span>
+        </div>
+        <div class="li-eng-stat">
+          <span class="li-eng-icon">🔁</span>
+          <span class="li-eng-val">${fmtNum(shares)}</span>
+          <span class="li-eng-lbl">Reposts</span>
+        </div>
+        <div class="li-eng-bar-wrap">
+          <div class="li-eng-bar-lbl">Engagement breakdown</div>
+          <div class="li-eng-bars">
+            <div class="li-eng-bar-row">
+              <span style="font-family:var(--mono);font-size:8px;color:#5095d0;width:52px;">Likes</span>
+              <div class="li-eng-bar-track"><div class="li-eng-bar-fill likes" style="width:${likes > 0 ? (likes/maxEng*100).toFixed(0) : 0}%"></div></div>
+              <span class="li-eng-bar-num">${fmtNum(likes)}</span>
+            </div>
+            <div class="li-eng-bar-row">
+              <span style="font-family:var(--mono);font-size:8px;color:#00e5a0;width:52px;">Comments</span>
+              <div class="li-eng-bar-track"><div class="li-eng-bar-fill comments" style="width:${comments > 0 ? (comments/maxEng*100).toFixed(0) : 0}%"></div></div>
+              <span class="li-eng-bar-num">${fmtNum(comments)}</span>
+            </div>
+            <div class="li-eng-bar-row">
+              <span style="font-family:var(--mono);font-size:8px;color:#8b5cf6;width:52px;">Reposts</span>
+              <div class="li-eng-bar-track"><div class="li-eng-bar-fill shares" style="width:${shares > 0 ? (shares/maxEng*100).toFixed(0) : 0}%"></div></div>
+              <span class="li-eng-bar-num">${fmtNum(shares)}</span>
+            </div>
+          </div>
+        </div>
+      </div>` : `<div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:6px 0 8px;">Engagement data unavailable for this post</div>`) : '';
+
+    const authorBadge = (isLinkedIn && author) ? `
+      <div class="li-author"><span class="li-author-icon">in</span>${esc(author)}</div>` : '';
+
+    return `
+    <div class="source-card" id="sc-${i}" onclick="toggleSrc(${i})">
+      <div class="sc-top">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="sc-src ${esc(item.source)}">${esc(item.source).toUpperCase()}</span>
+          <span class="sc-sentiment ${sentLabel}" title="Sentiment score: ${sentScore}">${sentIcon} ${sentLabel}<span class="sc-sentiment-score"> ${sentScore}</span></span>
+          ${isLinkedIn && totalEng > 0 ? `<span style="font-family:var(--mono);font-size:9px;color:#5095d0;opacity:0.8;">· ${fmtNum(totalEng)} eng.</span>` : ''}
+        </div>
+        <span class="sc-time">${fmtDate(item.collected_at)}</span>
+      </div>
+      <div class="sc-snippet">${esc(item.content_preview)}</div>
+      <div class="sc-expand" id="sc-exp-${i}">
+        ${authorBadge}
+        ${liEngPanel}
+        <div class="sc-url">${esc(item.url)}</div>
+        <a class="sc-open" href="${esc(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open source</a>
+      </div>
+      <button class="sc-expand-btn" id="sc-btn-${i}">▾</button>
+    </div>`;
+  }).join('') || '<div class="empty"><span class="big">🔍</span>No results for this filter</div>';
+
+  document.getElementById('results-panel').innerHTML=`
+    <div class="results-section">
+      <div class="rs-head"><span class="rs-title">Trend Clusters</span><div class="rs-line"></div><span class="rs-badge">${data.trends?.length||0}</span></div>
+      <div>${trendsHtml}</div>
+    </div>
+    <div class="results-section">
+      <div class="rs-head"><span class="rs-title">Opportunity Engine</span><div class="rs-line"></div><span class="rs-badge">${data.opportunity_scores?.length||0}</span></div>
+      <div class="opp-cards-grid">${oppsHtml}</div>
+    </div>
+    <div class="results-section">
+      <div class="rs-head"><span class="rs-title">Source Results</span><div class="rs-line"></div><span class="rs-badge">${results.length}</span></div>
+      <div class="source-list-wrap">${srcHtml}</div>
+    </div>`;
+}
+
+function toggleTrend(i){
+  document.getElementById(`td-${i}`).classList.toggle('open');
+  document.getElementById(`ftr-${i}`).classList.toggle('open');
+}
+function toggleSrc(i){
+  const exp=document.getElementById(`sc-exp-${i}`);
+  const btn=document.getElementById(`sc-btn-${i}`);
+  const open=exp.classList.toggle('open');
+  if(btn) btn.textContent=open?'▴':'▾';
+}
+
+document.querySelectorAll('.filter-btn[data-filter]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeFilter=btn.dataset.filter;updateEngagementVisibility();renderResults();
+  });
+});
+document.querySelectorAll('.filter-btn[data-sort]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn[data-sort]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeSort=btn.dataset.sort;renderResults();
+  });
+});
+
+document.querySelectorAll('.filter-btn[data-daterange]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn[data-daterange]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeDateRange=btn.dataset.daterange;renderResults();
+  });
+});
+
+document.querySelectorAll('.filter-btn[data-engagement]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn[data-engagement]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeEngagement=Number(btn.dataset.engagement);renderResults();
+  });
+});
+
+// Show engagement filter group only when linkedin source is selected
+function updateEngagementVisibility(){
+  const grp=document.getElementById('engagement-filter-grp');
+  if(grp) grp.style.display = (activeFilter==='linkedin'||activeFilter==='all') ? 'flex' : 'none';
+}
+</script>
+</body>
+</html>
