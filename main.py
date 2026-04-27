@@ -74,7 +74,9 @@ def _timeline_to_datetime(timeline: str) -> datetime:
     """Convert a timeline string to a UTC cutoff datetime."""
     now = datetime.now(timezone.utc)
     mapping = {
+        "7h":   timedelta(hours=7),
         "24h":  timedelta(hours=24),
+        "48h":  timedelta(hours=48),
         "7d":   timedelta(days=7),
         "30d":  timedelta(days=30),
         "90d":  timedelta(days=90),

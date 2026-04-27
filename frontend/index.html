@@ -941,7 +941,9 @@ h1 em { font-style: normal; color: var(--accent); }
       <div class="li-control">
         <label for="linkedin-timeline">LinkedIn timeline</label>
         <select id="linkedin-timeline">
+          <option value="7h">Past 7 hours</option>
           <option value="24h">Past 24 hours</option>
+          <option value="48h">Past 48 hours</option>
           <option value="7d">Last week</option>
           <option value="30d" selected>Last month</option>
           <option value="90d">Last 3 months</option>
@@ -1749,7 +1751,9 @@ function fmtDate(v) {
 
 function formatTimelineLabel(value) {
   return {
+    '7h':  'past 7 hours',
     '24h': 'past 24 hours',
+    '48h': 'past 48 hours',
     '7d': 'last week',
     '30d': 'last month',
     '90d': 'last 3 months',
@@ -1774,6 +1778,10 @@ function formatRegionLabel(value) {
 ═══════════════════════════════════════════ */
 document.getElementById('topic-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); runAnalysis(); }
+});
+
+document.getElementById('run-btn').addEventListener('click', () => {
+  runAnalysis();
 });
 
 // On load — check config status
