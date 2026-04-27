@@ -948,6 +948,18 @@ h1 em { font-style: normal; color: var(--accent); }
           <option value="180d">Last 6 months</option>
         </select>
       </div>
+      <div class="li-control">
+        <label for="linkedin-region">Region</label>
+        <select id="linkedin-region">
+          <option value="global" selected>🌍 Global</option>
+          <option value="india">🇮🇳 India</option>
+          <option value="asia_pacific">🌏 Asia Pacific</option>
+          <option value="southeast_asia">🌏 Southeast Asia</option>
+          <option value="north_america">🌎 North America</option>
+          <option value="europe">🌍 Europe</option>
+          <option value="middle_east">🌍 Middle East</option>
+        </select>
+      </div>
       <div class="li-controls-note">These settings are only applied when LinkedIn is enabled.</div>
     </div>
 
@@ -1254,6 +1266,7 @@ async function runAnalysis(forceRefresh = false) {
         sources: selectedSource,
         linkedin_post_count: selectedLinkedinPostCount,
         linkedin_timeline: selectedLinkedinTimeline,
+        linkedin_region: document.getElementById('linkedin-region')?.value || 'global',
       }),
     });
     if (!resp.ok) {
@@ -1346,7 +1359,7 @@ function renderResults(d) {
   const conf = ((ins.confidence||0)*100).toFixed(0);
   const hasLinkedin = (d.query_results||[]).some(group => (group.results||[]).some(item => item.source === 'linkedin'));
   const linkedinSettingsHtml = hasLinkedin
-    ? `<span>LinkedIn: <b>${d.linkedin_post_count||25} posts / ${esc(formatTimelineLabel(d.linkedin_timeline||'30d'))}</b></span>`
+    ? `<span>LinkedIn: <b>${d.linkedin_post_count||25} posts / ${esc(formatTimelineLabel(d.linkedin_timeline||'30d'))} / ${esc(formatRegionLabel(d.linkedin_region||'global'))}</b></span>`
     : '';
 
   results.innerHTML = `
@@ -1741,6 +1754,18 @@ function formatTimelineLabel(value) {
     '30d': 'last month',
     '90d': 'last 3 months',
     '180d': 'last 6 months',
+  }[value] || value;
+}
+
+function formatRegionLabel(value) {
+  return {
+    'global':         '🌍 Global',
+    'india':          '🇮🇳 India',
+    'asia_pacific':   '🌏 Asia Pacific',
+    'southeast_asia': '🌏 Southeast Asia',
+    'north_america':  '🌎 North America',
+    'europe':         '🌍 Europe',
+    'middle_east':    '🌍 Middle East',
   }[value] || value;
 }
 

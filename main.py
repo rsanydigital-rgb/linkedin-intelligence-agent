@@ -89,8 +89,9 @@ def _make_analysis_cache_key(
     sources: str,
     linkedin_post_count: int,
     linkedin_timeline: str,
+    linkedin_region: str,
 ) -> str:
-    return make_cache_key(f"{topic}|{sources}|{linkedin_post_count}|{linkedin_timeline}")
+    return make_cache_key(f"{topic}|{sources}|{linkedin_post_count}|{linkedin_timeline}|{linkedin_region}")
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +103,7 @@ class AnalyzeRequest(BaseModel):
     sources: str = Field(default="web_news")
     linkedin_post_count: int = Field(default=25, ge=5, le=200)
     linkedin_timeline: str = Field(default="30d")  # "24h","7d","30d","90d","180d"
+    linkedin_region: str = Field(default="global")
 
 
 class TrendItem(BaseModel):
@@ -170,6 +172,7 @@ class AnalyzeResponse(BaseModel):
     sentiment_summary: Optional[Dict[str, Any]] = None
     linkedin_post_count: int = 25
     linkedin_timeline: str = "30d"
+    linkedin_region: str = "global"
 
 
 class NotionExportRequest(BaseModel):
@@ -274,6 +277,7 @@ async def analyze(
         request.sources,
         request.linkedin_post_count,
         request.linkedin_timeline,
+        request.linkedin_region,
     )
 
     # ── Cache lookup (skip if refresh=true) ──────────────────────────────
@@ -292,6 +296,7 @@ async def analyze(
         sources=request.sources,
         linkedin_post_count=request.linkedin_post_count,
         linkedin_date_since=linkedin_date_since,
+        linkedin_region=request.linkedin_region,
     )
 
     if result.get("error"):
@@ -356,6 +361,7 @@ async def analyze(
         sentiment_summary=getattr(processed, "sentiment_summary", {}),
         linkedin_post_count=request.linkedin_post_count,
         linkedin_timeline=request.linkedin_timeline,
+        linkedin_region=request.linkedin_region,
     )
 
     _last_results[topic.lower()] = response_data

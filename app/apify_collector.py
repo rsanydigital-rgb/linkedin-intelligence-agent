@@ -31,10 +31,22 @@ def is_available() -> bool:
     return bool(_APIFY_TOKEN and _APIFY_TOKEN.startswith("apify_api_"))
 
 
+_REGION_GEO_URNS = {
+    "india":          "102713980",
+    "asia_pacific":   "102393603",
+    "southeast_asia": "104514075",
+    "north_america":  "102221843",
+    "europe":         "100506914",
+    "middle_east":    "103012572",
+    "global":         None,
+}
+
+
 def collect_linkedin_posts(
     queries: List[str],
     max_total_results: Optional[int] = None,
     date_since: Optional[datetime] = None,
+    region: Optional[str] = None,
 ) -> List[Dict]:
     if not is_available():
         logger.debug("Apify token missing/invalid; LinkedIn skipped")
@@ -55,9 +67,10 @@ def collect_linkedin_posts(
             fetch_limit,
         )
         items: List[Dict] = []
+        geo_urn = _REGION_GEO_URNS.get(region or "global") if region else None
         for actor_id in (_ACTOR_PRIMARY, _ACTOR_FALLBACK):
             try:
-                items = _run_actor(query, actor_id, fetch_limit)
+                items = _run_actor(query, actor_id, fetch_limit, geo_urn=geo_urn)
                 if items:
                     logger.info("Actor '%s': %d items for '%s'", actor_id, len(items), query)
                     break
@@ -74,7 +87,7 @@ def collect_linkedin_posts(
     return all_results[:total_limit]
 
 
-def _run_actor(query: str, actor_id: str, max_results: int) -> List[Dict]:
+def _run_actor(query: str, actor_id: str, max_results: int, geo_urn: Optional[str] = None) -> List[Dict]:
     headers = {
         "Authorization": f"Bearer {_APIFY_TOKEN}",
         "Content-Type": "application/json",
@@ -87,12 +100,16 @@ def _run_actor(query: str, actor_id: str, max_results: int) -> List[Dict]:
             "maxPosts": max_results,
             "proxy": {"useApifyProxy": True},
         }
+        if geo_urn:
+            run_input["geoUrn"] = geo_urn
     else:
         run_input = {
             "search": query,
             "maxPosts": max_results,
             "proxy": {"useApifyProxy": True},
         }
+        if geo_urn:
+            run_input["geoUrn"] = geo_urn
 
     resp = _http.post(
         f"{_APIFY_BASE}/acts/{slug}/runs",

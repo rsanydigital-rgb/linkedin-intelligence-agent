@@ -50,6 +50,7 @@ def collect(
     sources: str = "web_news",
     linkedin_post_count: Optional[int] = None,
     linkedin_date_since: Optional[datetime] = None,
+    linkedin_region: Optional[str] = None,
 ) -> List[RawResult]:
     """Collect results for all queries and return deduplicated RawResult list."""
     results, _ = collect_with_breakdown(
@@ -57,6 +58,7 @@ def collect(
         sources=sources,
         linkedin_post_count=linkedin_post_count,
         linkedin_date_since=linkedin_date_since,
+        linkedin_region=linkedin_region,
     )
     return results
 
@@ -66,6 +68,7 @@ def collect_with_breakdown(
     sources: str = "web_news",
     linkedin_post_count: Optional[int] = None,
     linkedin_date_since: Optional[datetime] = None,
+    linkedin_region: Optional[str] = None,
 ) -> Tuple[List[RawResult], Dict[str, List[RawResult]]]:
     """Collect prioritized results and preserve a validated per-query breakdown."""
     serpapi_key = os.getenv("SERPAPI_KEY", "")
@@ -88,6 +91,7 @@ def collect_with_breakdown(
                 queries,
                 max_total_results=linkedin_post_count,
                 date_since=linkedin_date_since,
+                region=linkedin_region,
             )
             logger.info("Apify LinkedIn returned %d total items", len(li_items))
             for item in li_items:

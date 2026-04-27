@@ -48,6 +48,7 @@ class PipelineState(TypedDict):
     t0:       float  # wall-clock start for elapsed_seconds
     linkedin_post_count: int
     linkedin_date_since: Optional[datetime]
+    linkedin_region: Optional[str]
 
     # Intermediate
     query_analysis:           Optional[Dict[str, Any]]
@@ -207,6 +208,7 @@ def enrich_node(state: PipelineState) -> PipelineState:
             top_queries,
             max_total_results=state.get("linkedin_post_count"),
             date_since=state.get("linkedin_date_since"),
+            region=state.get("linkedin_region"),
         )
         logger.info("[LangGraph] enrich_node: got %d LinkedIn items", len(li_items))
 
@@ -372,6 +374,7 @@ def run_pipeline(
     sources: str = "web_news",
     linkedin_post_count: int = 25,
     linkedin_date_since: Optional[datetime] = None,
+    linkedin_region: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Run the full LangGraph intelligence pipeline.
@@ -388,6 +391,7 @@ def run_pipeline(
         "t0":                      t0,
         "linkedin_post_count":     linkedin_post_count,
         "linkedin_date_since":     linkedin_date_since,
+        "linkedin_region":         linkedin_region,
         "query_analysis":          None,
         "queries":                 None,
         "raw_results":             None,
