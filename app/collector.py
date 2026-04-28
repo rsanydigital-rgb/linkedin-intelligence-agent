@@ -14,6 +14,7 @@ Results are validated through the RawResult Pydantic schema and deduplicated.
 import os
 import hashlib
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Set, Tuple, Optional
 
@@ -78,10 +79,20 @@ def collect_with_breakdown(
     raw_items: List[Dict] = []
     query_groups: Dict[str, List[Dict]] = {query: [] for query in queries}
 
-    for query in queries:
-        items = _collect_for_query(query, serpapi_key, news_api_key)
-        query_groups[query].extend(items)
-        raw_items.extend(items)
+    # Run all queries in parallel — cuts collection time by ~5x
+    with ThreadPoolExecutor(max_workers=min(len(queries), 6)) as executor:
+        future_to_query = {
+            executor.submit(_collect_for_query, query, serpapi_key, news_api_key): query
+            for query in queries
+        }
+        for future in as_completed(future_to_query):
+            query = future_to_query[future]
+            try:
+                items = future.result()
+                query_groups[query].extend(items)
+                raw_items.extend(items)
+            except Exception as exc:
+                logger.warning("Query '%s' collection failed: %s", query, exc)
 
     # LinkedIn / Apify collection — runs when user selects "+ LinkedIn" source
     if include_linkedin:
@@ -167,7 +178,7 @@ def _fetch_serpapi(query: str, api_key: str) -> List[Dict]:
         "num": 5,
         "hl": "en",
     }
-    resp = requests.get("https://serpapi.com/search", params=params, timeout=120)
+    resp = requests.get("https://serpapi.com/search", params=params, timeout=15)
     resp.raise_for_status()
     data = resp.json()
 
@@ -193,7 +204,7 @@ def _fetch_newsapi(query: str, api_key: str) -> List[Dict]:
         "language": "en",
         "sortBy": "publishedAt",
     }
-    resp = requests.get("https://newsapi.org/v2/everything", params=params, timeout=120)
+    resp = requests.get("https://newsapi.org/v2/everything", params=params, timeout=15)
     resp.raise_for_status()
     data = resp.json()
 

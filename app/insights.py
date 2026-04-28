@@ -18,7 +18,7 @@ from app.processor import ProcessedData
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
+_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "90"))
 
 
 def generate_insights(topic: str, data: ProcessedData) -> Dict[str, Any]:
@@ -74,31 +74,28 @@ def _build_structured_input(topic: str, data: ProcessedData) -> Dict[str, Any]:
     """Distil pipeline output into a compact JSON object for the LLM."""
     return {
         "topic": topic,
-        "total_sources_analysed": len(data.documents),
-        "top_trending_keywords": data.top_keywords[:15],
-        "trend_details": [
+        "total_sources": len(data.documents),
+        "top_keywords": data.top_keywords[:8],
+        "trends": [
             {
                 "label": trend["label"],
-                "keywords": trend["keywords"][:6],
-                "score": trend["score"],
+                "keywords": trend["keywords"][:4],
+                "score": round(trend["score"], 3),
             }
-            for trend in data.trends[:12]
+            for trend in data.trends[:6]
         ],
-        "top_documents_by_engagement": sorted(
+        "top_docs": sorted(
             [
                 {
                     "source": document["source"],
-                    "source_type": document.get("source_type", "unknown"),
-                    "source_weight": document.get("source_weight", 0.3),
-                    "engagement_score": document["engagement_score"],
-                    "keywords": document["keywords"][:5],
-                    "preview": document["content_preview"][:150],
+                    "engagement": document["engagement_score"],
+                    "preview": document["content_preview"][:100],
                 }
                 for document in data.documents
             ],
-            key=lambda item: item["engagement_score"],
+            key=lambda item: item["engagement"],
             reverse=True,
-        )[:5],
+        )[:3],
     }
 
 
@@ -170,8 +167,8 @@ def _insights_via_openai(structured_input: Dict[str, Any], api_key: str) -> Dict
             {"role": "system", "content": _SYSTEM},
             {"role": "user", "content": _user_prompt(structured_input)},
         ],
-        "max_tokens": 1024,
-        "temperature": 0.3,
+        "max_tokens": 512,
+        "temperature": 0.2,
         "response_format": {"type": "json_object"},
     }
 

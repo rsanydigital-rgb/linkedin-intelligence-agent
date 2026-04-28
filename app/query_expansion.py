@@ -66,10 +66,10 @@ def expand_topic(topic: str) -> List[str]:
 
 
 _SYSTEM_PROMPT = (
-    "You are a search-query strategist. Given a topic, produce exactly 6 diverse, "
+    "You are a search-query strategist. Given a topic, produce exactly 4 diverse, "
     "specific search queries that together give broad coverage of that topic: "
-    "industry news, technical developments, market trends, key players, use-cases, "
-    "and future outlook. Return ONLY a JSON array of strings, no extra text."
+    "industry news, technical developments, market trends, and key players. "
+    "Return ONLY a JSON array of strings, no extra text."
 )
 
 
@@ -135,10 +135,8 @@ def _expand_rule_based(topic: str) -> List[str]:
     templates = [
         "{topic} latest trends 2026",
         "{topic} industry news and developments",
+        "{topic} market growth and key players",
         "{topic} technology innovations",
-        "{topic} market growth and opportunities",
-        "{topic} key players and companies",
-        "{topic} future outlook and predictions",
     ]
     return [template.format(topic=topic) for template in templates]
 

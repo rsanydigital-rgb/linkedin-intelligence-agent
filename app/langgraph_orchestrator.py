@@ -25,6 +25,7 @@ State schema (PipelineState TypedDict):
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
@@ -264,36 +265,49 @@ def finalize_node(state: PipelineState) -> PipelineState:
     # Processing
     logger.info("[LangGraph] finalize_node: processing %d documents", len(validated_results))
     try:
-        processed = process(validated_results, topic=state.get("topic", ""))
+        processed = process(validated_results, topic=topic)
     except Exception as exc:
         return {**state, "error": f"Processing failed: {exc}"}
 
     if not processed.documents:
         return {**state, "error": "No posts met the engagement threshold for trend detection."}
 
-    # Insights
-    logger.info("[LangGraph] finalize_node: generating insights")
-    try:
-        insights = generate_insights(topic, processed)
-    except Exception as exc:
-        logger.warning("[LangGraph] finalize_node: insight generation failed: %s", exc)
-        insights = {
-            "summary": f"Analysis complete for '{topic}'.",
-            "key_takeaways": ["Data collected successfully."],
-            "opportunities": [],
-            "confidence": 0.4,
-        }
+    # Run insights generation and trend history in parallel
+    insights = None
+    trend_evolution = []
+    opportunity_scores = []
 
-    # Trend history
-    try:
-        previous_trends = load_previous_trends(topic)
+    def _run_insights():
+        return generate_insights(topic, processed)
+
+    def _run_trend_history():
+        prev = load_previous_trends(topic)
         save_trends(topic, processed.trends)
-        trend_evolution = compute_trend_evolution(processed.trends, previous_trends)
-        opportunity_scores = score_opportunities(processed.trends, trend_evolution)
-    except Exception as exc:
-        logger.warning("[LangGraph] finalize_node: trend history failed: %s", exc)
-        trend_evolution      = []
-        opportunity_scores   = []
+        evolution = compute_trend_evolution(processed.trends, prev)
+        opportunities = score_opportunities(processed.trends, evolution)
+        return evolution, opportunities
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        insights_future = executor.submit(_run_insights)
+        trend_future    = executor.submit(_run_trend_history)
+
+        try:
+            insights = insights_future.result(timeout=35)
+        except Exception as exc:
+            logger.warning("[LangGraph] finalize_node: insight generation failed: %s", exc)
+            insights = {
+                "summary": f"Analysis complete for '{topic}'.",
+                "key_takeaways": ["Data collected successfully."],
+                "opportunities": [],
+                "confidence": 0.4,
+            }
+
+        try:
+            trend_evolution, opportunity_scores = trend_future.result(timeout=10)
+        except Exception as exc:
+            logger.warning("[LangGraph] finalize_node: trend history failed: %s", exc)
+            trend_evolution    = []
+            opportunity_scores = []
 
     logger.info("[LangGraph] finalize_node: done — %d trends, %d opportunities",
                 len(processed.trends), len(opportunity_scores))
