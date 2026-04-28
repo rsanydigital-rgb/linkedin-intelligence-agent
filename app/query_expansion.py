@@ -15,7 +15,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "90"))
+_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
 
 
 def expand_topic(topic: str) -> List[str]:
@@ -114,8 +114,8 @@ def _expand_via_openai(topic: str, api_key: str) -> List[str]:
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": f"Topic: {topic}"},
         ],
-        "max_tokens": 512,
-        "temperature": 0.7,
+        "max_tokens": 300,
+        "temperature": 0.3,
     }
 
     logger.debug("POSTing to %s/chat/completions with model=%s timeout=%d", base_url, model, _LLM_TIMEOUT)

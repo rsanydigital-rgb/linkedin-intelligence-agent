@@ -264,7 +264,7 @@ def finalize_node(state: PipelineState) -> PipelineState:
     # Processing
     logger.info("[LangGraph] finalize_node: processing %d documents", len(validated_results))
     try:
-        processed = process(validated_results)
+        processed = process(validated_results, topic=state.get("topic", ""))
     except Exception as exc:
         return {**state, "error": f"Processing failed: {exc}"}
 

@@ -13,7 +13,10 @@ Flow:
 """
 
 import re
+import json
 import logging
+import os
+import requests
 from typing import List, Dict, Any
 from urllib.parse import urlparse
 
@@ -31,13 +34,68 @@ STOPWORDS = set(ENGLISH_STOP_WORDS)
 LOW_SIGNAL_TERMS = {
     "new", "using", "time", "latest", "based", "used", "use", "like",
     "said", "says", "year", "years", "week", "today", "make", "made",
+    "usd", "billion", "million", "trillion", "percent", "including",
+    "included", "report", "news", "analysis", "results", "quarter",
+    "just", "also", "well", "first", "second", "third", "fourth",
+    "number", "numbers", "data", "source", "sources", "according",
 }
 GENERIC_LABEL_TERMS = {
     "technology", "technologies", "system", "systems", "platform", "platforms",
     "solution", "solutions", "service", "services", "industry", "market",
-    "global", "company", "companies", "business",
+    "global", "company", "companies", "business", "west", "east",
 }
-ENGAGEMENT_THRESHOLD = 20.0
+
+
+def _llm_label_clusters(topic: str, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Use OpenAI to generate meaningful labels for trend clusters."""
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    orchestrator_model = os.getenv("LLM_ORCHESTRATOR_MODEL", "gpt-4o-mini").strip()
+    if not openai_key or openai_key in ("your_openai_key_here", ""):
+        return clusters
+
+    cluster_data = [
+        {"id": i, "keywords": c["keywords"][:6]}
+        for i, c in enumerate(clusters)
+    ]
+
+    system = (
+        "You are a trend analyst. Given a topic and keyword clusters from content analysis, "
+        "generate a short, meaningful label (3-5 words) for each cluster that captures its core theme. "
+        "Labels must be specific, professional, and directly relevant to the topic. "
+        "No generic terms like 'Industry Trends', 'Market Analysis', or 'New Technology'. "
+        "Return ONLY a JSON array of strings, one label per cluster, in the same order. No extra text."
+    )
+    user = f"Topic: {topic}\nClusters: {json.dumps(cluster_data)}"
+
+    try:
+        base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+        resp = requests.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+            json={
+                "model": orchestrator_model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "max_tokens": 256,
+                "temperature": 0.3,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"].strip()
+        raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
+        labels = json.loads(raw)
+        if isinstance(labels, list) and len(labels) == len(clusters):
+            for i, cluster in enumerate(clusters):
+                if isinstance(labels[i], str) and len(labels[i]) > 2:
+                    cluster["label"] = labels[i]
+    except Exception as exc:
+        logger.warning("LLM cluster labelling failed (using rule-based labels): %s", exc)
+
+    return clusters
+ENGAGEMENT_THRESHOLD = 5.0
 SOURCE_WEIGHTS = {
     "news": 0.8,
     "blog": 0.5,
@@ -69,7 +127,7 @@ class ProcessedData:
         }
 
 
-def process(results: List[CollectedPost]) -> ProcessedData:
+def process(results: List[CollectedPost], topic: str = "") -> ProcessedData:
     if not results:
         logger.warning("process() called with empty results list")
         return ProcessedData(documents=[], trends=[], top_keywords=[])
@@ -125,6 +183,11 @@ def process(results: List[CollectedPost]) -> ProcessedData:
         )
 
     trends = get_trends(filtered_corpus, tfidf_matrix, feature_names)
+
+    # Enrich cluster labels with LLM if topic and API key are available
+    if topic and trends:
+        trends = _llm_label_clusters(topic, trends)
+
     top_keywords = []
     for trend in trends:
         for keyword in trend["keywords"]:

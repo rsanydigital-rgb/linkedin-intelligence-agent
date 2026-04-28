@@ -18,7 +18,7 @@ from app.processor import ProcessedData
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "90"))
+_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
 
 
 def generate_insights(topic: str, data: ProcessedData) -> Dict[str, Any]:
