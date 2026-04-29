@@ -343,11 +343,11 @@ def _build_graph() -> StateGraph:
     # Conditional edges from router
     g.add_conditional_edges(
         "route_node",
-        route_node,   # the actual decision function
+        lambda s: s.get("_next", "finalize_node"),  # reads pre-computed decision — no double call
         {
-            "collect_node":  "collect_node",   # retry path
-            "enrich_node":   "enrich_node",    # LinkedIn enrichment path
-            "finalize_node": "finalize_node",  # straight to finalize
+            "collect_node":  "collect_node",
+            "enrich_node":   "enrich_node",
+            "finalize_node": "finalize_node",
         },
     )
 
@@ -359,14 +359,14 @@ def _build_graph() -> StateGraph:
 
 def _route_passthrough(state: PipelineState) -> PipelineState:
     """
-    Passthrough node that increments retry_count when we loop back to collect.
-    The actual routing decision is made by route_node() used as the conditional function.
+    Passthrough node: computes routing decision ONCE and stores it in state['_next'].
+    The conditional edge function reads _next directly — avoids calling route_node() twice.
     """
     next_node = route_node(state)
     new_retry = state.get("retry_count", 0)
     if next_node == "collect_node":
         new_retry += 1
-    return {**state, "retry_count": new_retry}
+    return {**state, "retry_count": new_retry, "_next": next_node}
 
 
 # Compiled graph singleton — built once, reused across requests

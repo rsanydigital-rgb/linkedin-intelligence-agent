@@ -240,7 +240,6 @@ async def config_status():
         "sendgrid":  bool(os.getenv("SENDGRID_API_KEY", "").strip()),
         "notion":    bool(os.getenv("NOTION_API_KEY", "").strip() and os.getenv("NOTION_DATABASE_ID", "").strip()),
         "n8n":       bool(os.getenv("N8N_WEBHOOK_URL", "").strip()),
-        "apify":     bool(os.getenv("APIFY_API_TOKEN", "").strip()),
         "redis":     bool(os.getenv("REDIS_URL", "").strip()),
         "postgres":  bool(os.getenv("DATABASE_URL", "").strip()),
         "llm_model": os.getenv("LLM_ORCHESTRATOR_MODEL", "not set"),

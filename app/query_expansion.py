@@ -15,7 +15,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
+_LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT_SECONDS", "8"))  # reduced from 30s — fail fast to rule-based fallback
 
 
 def expand_topic(topic: str) -> List[str]:

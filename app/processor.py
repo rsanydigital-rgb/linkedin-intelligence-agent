@@ -27,6 +27,7 @@ from sklearn.metrics import silhouette_score
 
 from app.validation import CollectedPost
 from app.sentiment import analyse as sentiment_analyse, aggregate as sentiment_aggregate
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def _llm_label_clusters(topic: str, clusters: List[Dict[str, Any]]) -> List[Dict
                 "max_tokens": 256,
                 "temperature": 0.3,
             },
-            timeout=30,
+            timeout=10,  # hard cap — cluster labelling must not block the pipeline
         )
         resp.raise_for_status()
         raw = resp.json()["choices"][0]["message"]["content"].strip()
@@ -184,9 +185,15 @@ def process(results: List[CollectedPost], topic: str = "") -> ProcessedData:
 
     trends = get_trends(filtered_corpus, tfidf_matrix, feature_names)
 
-    # Enrich cluster labels with LLM if topic and API key are available
+    # Enrich cluster labels with LLM — runs in a background thread with a hard timeout
+    # so a slow/unavailable LLM never blocks the full pipeline response.
     if topic and trends:
-        trends = _llm_label_clusters(topic, trends)
+        with ThreadPoolExecutor(max_workers=1) as _pool:
+            _fut = _pool.submit(_llm_label_clusters, topic, trends)
+            try:
+                trends = _fut.result(timeout=12)
+            except (FuturesTimeoutError, Exception) as _exc:
+                logger.warning("LLM cluster labelling skipped (timeout/error): %s", _exc)
 
     top_keywords = []
     for trend in trends:
