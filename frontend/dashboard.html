@@ -49,8 +49,8 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .meta-pill{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;}
 .meta-pill b{color:var(--text);}
 .btn-back{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--accent);background:rgba(0,212,255,0.06);
-  border:1px solid rgba(0,212,255,0.25);border-radius:var(--r);padding:8px 16px;cursor:pointer;text-decoration:none;
-  display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;}
+  border:1px solid rgba(0,212,255,0.4);border-radius:var(--r);padding:9px 18px;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;font-weight:700;}
 .btn-back:hover{background:rgba(0,212,255,0.12);}
 .cache-bar{display:none;align-items:center;gap:10px;padding:9px 16px;background:var(--surface);
   border:1px solid var(--border);border-radius:var(--r);margin-bottom:20px;font-family:var(--mono);font-size:11px;}
@@ -83,7 +83,7 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .kpi.kpi-dominant .kpi-val{font-size:44px;}
 .kpi.kpi-dominant .kpi-lbl{color:var(--accent);letter-spacing:0.12em;}
 /* Opportunity score tooltip */
-.kpi-info-btn{background:none;border:1px solid var(--muted2);border-radius:50%;width:16px;height:16px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;transition:all 0.15s;flex-shrink:0;}
+.kpi-info-btn{background:none;border:1px solid var(--border2);border-radius:50%;width:16px;height:16px;font-family:var(--mono);font-size:9px;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;transition:all 0.15s;flex-shrink:0;}
 .kpi-info-btn:hover{color:var(--accent);border-color:var(--accent);}
 .kpi-tooltip{display:none;position:absolute;z-index:50;bottom:calc(100% + 8px);left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--text);line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:fadeDown 0.15s ease;}
 .kpi-tooltip.open{display:block;}
@@ -219,6 +219,7 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .sent-src-dot{width:6px;height:6px;border-radius:50%;}
 /* Toast */
 #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+@media(max-width:640px){#toast-container{bottom:80px;right:16px;left:16px;}#toast-container .toast{max-width:100%;}}
 .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;
   font-family:var(--mono);font-size:11px;color:var(--text);max-width:320px;pointer-events:auto;
   box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toastIn 0.2s ease both;line-height:1.5;}
@@ -344,7 +345,7 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 
   <!-- Sentiment Overview Card -->
   <div class="dash-row anim d2" style="margin-bottom:16px;">
-    <div class="card" id="sentiment-card" style="display:none;">
+    <div class="card" id="sentiment-card" style="display:none;min-height:120px;">
       <div class="card-head">
         <span class="card-title">Sentiment Overview</span>
         <span class="card-badge" id="sent-overall-badge">—</span>
@@ -609,13 +610,18 @@ let data=null;
 try{data=JSON.parse(localStorage.getItem('si_analysis')||'null');}catch{}
 
 if(!data){
-  document.getElementById('dash-title').textContent='Waiting for analysis…';
+  document.getElementById('dash-title').textContent='No analysis yet';
   document.getElementById('m-sources').textContent='—';
   document.getElementById('m-trends').textContent='—';
   document.getElementById('m-time').textContent='—';
   // Show a friendly empty state with a back link + poll for data
   const emptyMsg = '<div class="empty"><span class="big" style="opacity:0.3">📊</span>No analysis yet — <a href="index.html" style="color:var(--accent)">run one first</a></div>';
   document.querySelectorAll('.card-body').forEach(el=>{ el.innerHTML=emptyMsg; });
+  // Disable action buttons when no data
+  ['qa-notion','qa-email','qa-slack'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';}
+  });
   // Poll localStorage every 2s in case the user runs an analysis in another tab
   const _poll = setInterval(()=>{
     try{
@@ -624,6 +630,15 @@ if(!data){
     }catch(_){}
   }, 2000);
 }else{
+  // Fix #31: warn if data is stale (>24h old)
+  const ts = data._ts;
+  if(ts && (Date.now() - ts) > 86400000){
+    const age = Math.round((Date.now()-ts)/3600000);
+    const staleBar=document.createElement('div');
+    staleBar.style.cssText='background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.25);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:11px;color:#ffb020;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+    staleBar.innerHTML=`⚠ Analysis is ${age}h old — data may be outdated. <a href="index.html" style="color:var(--accent);text-decoration:underline;">Run a fresh analysis →</a>`;
+    document.querySelector('.page')?.insertBefore(staleBar,document.querySelector('.topic-bar')?.nextSibling);
+  }
   render(data);
 }
 
@@ -723,6 +738,12 @@ function renderDonut(queryResults, total){
   const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   const grandTotal=entries.reduce((s,[,v])=>s+v,0)||1;
   const srcColors={'serpapi':'#00d4ff','newsapi':'#00e5a0','linkedin':'#3b82f6','mock':'#445570'};
+
+  // Fix #13: Empty state when no source data at all
+  if(entries.length === 0){
+    document.getElementById('donut-wrap').innerHTML='<div class="empty" style="width:100%;padding:20px 0;font-size:11px;">No source data available</div>';
+    return;
+  }
 
   document.getElementById('donut-cval').textContent = total||grandTotal;
 

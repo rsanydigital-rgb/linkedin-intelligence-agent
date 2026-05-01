@@ -119,6 +119,7 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .d1{animation-delay:0.05s;}.d2{animation-delay:0.1s;}.d3{animation-delay:0.15s;}
 /* Toast */
 #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+@media(max-width:640px){#toast-container{bottom:80px;right:16px;left:16px;}#toast-container .toast{max-width:100%;}}
 .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--text);max-width:320px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toastIn 0.2s ease both;line-height:1.5;}
 .toast a{color:var(--accent);}
 .toast.success{border-color:rgba(0,229,160,0.4);color:var(--green);}
@@ -145,8 +146,8 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 
 <div class="page">
   <div class="page-eyebrow anim">Reports &amp; Automation</div>
-  <div class="page-title anim">Distribute &amp;<br>Schedule</div>
-  <p class="page-sub anim">// Export results · Email digests · Slack notifications · n8n automation</p>
+  <div class="page-title anim">Automate &amp;<br>Export</div>
+  <p class="page-sub anim">// Schedule reports · Export to Notion · Email digests · Slack notifications</p>
 
   <div class="reports-grid">
 
@@ -312,10 +313,27 @@ function setMsg(id,text,type){
 let data=null, selectedCron='0 9 * * *';
 try{data=JSON.parse(localStorage.getItem('si_analysis')||'null');}catch{}
 
-const topic = data?.topic || '—';
+const topic = data?.topic || null;
+const hasData = !!data;
+
 ['sched-topic','notion-topic','email-topic','slack-topic'].forEach(id=>{
-  const el=document.getElementById(id);if(el) el.textContent=topic;
+  const el=document.getElementById(id);
+  if(el) el.textContent=topic||'—';
 });
+
+// Fix #24: When no analysis exists, show prompt and disable action buttons
+if(!hasData){
+  const noDataMsg='<div style="font-family:var(--mono);font-size:11px;color:var(--amber);background:rgba(255,176,32,0.06);border:1px solid rgba(255,176,32,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;">⚠ No analysis yet — <a href="index.html" style="color:var(--accent);text-decoration:underline;">run one on Discover first</a></div>';
+  ['r-card-body'].forEach(cls=>{
+    document.querySelectorAll('.'+cls).forEach((el,i)=>{
+      if(i===0) el.insertAdjacentHTML('afterbegin',noDataMsg);
+    });
+  });
+  ['schedule-btn','notion-btn','email-btn','slack-btn'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.disabled=true;}
+  });
+}
 
 // Pre-fill email
 document.getElementById('digest-email').value = localStorage.getItem('digest_email')||'';
@@ -328,13 +346,19 @@ document.querySelectorAll('#freq-row .freq-btn').forEach(btn=>{
   });
 });
 
-// n8n Setup Wizard toggle
+// Fix #23: n8n Setup Wizard — open by default on first visit, collapse after schedule
+const _n8nSeen = localStorage.getItem('si_n8n_setup_seen');
+const _wizardBody = document.getElementById('n8n-wizard-body');
+const _wizardToggle = document.getElementById('n8n-wizard-toggle');
+if(!_n8nSeen){
+  _wizardBody.classList.add('open');
+  _wizardToggle.textContent='▲ Hide';
+}
+
 function toggleN8nWizard() {
-  const body = document.getElementById('n8n-wizard-body');
-  const toggle = document.getElementById('n8n-wizard-toggle');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  toggle.textContent = isOpen ? '▼ Show' : '▲ Hide';
+  const isOpen = _wizardBody.classList.contains('open');
+  _wizardBody.classList.toggle('open', !isOpen);
+  _wizardToggle.textContent = isOpen ? '▼ Show' : '▲ Hide';
 }
 
 // Schedule
@@ -349,6 +373,10 @@ document.getElementById('schedule-btn').addEventListener('click', async()=>{
     if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
     setMsg('sched-msg','✓ Scheduled. n8n will run this report on your chosen frequency.','ok');
     toast('⚙ Schedule registered ✓','success');
+    // Fix #23: collapse wizard once user has scheduled successfully
+    localStorage.setItem('si_n8n_setup_seen','1');
+    _wizardBody.classList.remove('open');
+    _wizardToggle.textContent='▼ Show';
   }catch(e){
     const msg=e.message.toLowerCase().includes('n8n')||e.message.includes('503')
       ?'n8n not configured — add N8N_WEBHOOK_URL to .env':e.message;
@@ -367,9 +395,16 @@ document.getElementById('notion-btn').addEventListener('click', async()=>{
       body:JSON.stringify({topic:data.topic})});
     const j=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(j.detail||`HTTP ${r.status}`);
-    const link=j.notion_url?`<a href="${j.notion_url}" target="_blank">Open page →</a>`:'';
-    setMsg('notion-msg',j.notion_url?'✓ Notion page created':'✓ Exported to Notion','ok');
-    toast(j.notion_url?`↗ Notion page created · <a href="${j.notion_url}" target="_blank">Open →</a>`:'↗ Exported ✓','success',7000);
+    // Fix #26: Persist Notion URL in the card so it's not lost when toast disappears
+    const notionMsg = document.getElementById('notion-msg');
+    if(j.notion_url){
+      notionMsg.innerHTML=`✓ Notion page created — <a href="${esc(j.notion_url)}" target="_blank" style="color:var(--accent);text-decoration:underline;">View in Notion →</a>`;
+      notionMsg.className='status-msg ok';
+      toast(`↗ Notion page created · <a href="${esc(j.notion_url)}" target="_blank">Open →</a>`,'success',12000);
+    } else {
+      setMsg('notion-msg','✓ Exported to Notion','ok');
+      toast('↗ Exported ✓','success',7000);
+    }
   }catch(e){
     const msg=e.message.includes('503')?'Notion not configured — add NOTION_API_KEY + NOTION_PAGE_ID to .env':e.message;
     setMsg('notion-msg',msg,'err');toast(msg,'warn',5000);
@@ -379,8 +414,15 @@ document.getElementById('notion-btn').addEventListener('click', async()=>{
 // Email digest
 document.getElementById('email-btn').addEventListener('click', async()=>{
   if(!data){toast('Run an analysis first','warn');return;}
-  const email=document.getElementById('digest-email').value.trim();
-  if(!email){toast('Enter a recipient email','warn');return;}
+  const emailInput=document.getElementById('digest-email');
+  const email=emailInput.value.trim();
+  if(!email || !emailInput.checkValidity()){
+    emailInput.style.borderColor='var(--accent2)';
+    setMsg('email-msg','Please enter a valid email address','err');
+    emailInput.focus();
+    return;
+  }
+  emailInput.style.borderColor='';
   const btn=document.getElementById('email-btn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
   try{
@@ -395,6 +437,13 @@ document.getElementById('email-btn').addEventListener('click', async()=>{
     const msg=e.message.includes('503')||e.message.includes('SENDGRID')?'Email not configured — add SENDGRID_API_KEY to .env':e.message;
     setMsg('email-msg',msg,'err');toast(msg,'warn',5000);
   }finally{btn.disabled=false;btn.innerHTML='Send →';}
+});
+
+// Clear email error on input
+document.getElementById('digest-email').addEventListener('input',()=>{
+  document.getElementById('digest-email').style.borderColor='';
+  const msg=document.getElementById('email-msg');
+  if(msg.classList.contains('err')){msg.textContent='';msg.className='status-msg';}
 });
 
 // Slack

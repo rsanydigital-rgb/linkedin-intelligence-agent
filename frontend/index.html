@@ -85,10 +85,12 @@ nav {
 .nav-brand {
   display: flex; align-items: center; gap: 10px;
 }
-.nav-logo {
-  width: 28px; height: 28px;
+.nav-diamond {
+  width: 16px; height: 16px;
   background: var(--accent);
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transform: rotate(45deg);
+  box-shadow: 0 0 12px rgba(0,212,255,0.5);
+  flex-shrink: 0;
 }
 .nav-name {
   font-family: var(--mono);
@@ -190,6 +192,7 @@ nav {
   background: var(--surface); border: 1px solid var(--border2);
   border-radius: var(--r); padding: 6px 12px; cursor: pointer;
   transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px;
 }
 #sys-btn:hover { color: var(--accent); border-color: var(--accent); }
 
@@ -286,6 +289,11 @@ h1 em { font-style: normal; color: var(--accent); }
   color: var(--muted); letter-spacing: 0.08em;
   margin-bottom: 36px;
 }
+.hero-tagline {
+  font-size: 16px; color: var(--text);
+  font-weight: 400; line-height: 1.6;
+  max-width: 560px; margin-bottom: 10px;
+}
 
 /* Search bar */
 .search-wrap {
@@ -333,8 +341,12 @@ h1 em { font-style: normal; color: var(--accent); }
 }
 .src-btn:hover { border-color: var(--border2); color: var(--text); }
 .src-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
-.apify-warn {
-  font-size: 9px; color: var(--amber); margin-left: 6px; opacity: 0.9;
+.apify-info {
+  font-size: 10px; color: var(--muted); margin-left: 5px;
+  cursor: help; vertical-align: middle;
+  border: 1px solid var(--border2); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; line-height: 1;
 }
 .linkedin-controls {
   display: none;
@@ -745,6 +757,27 @@ h1 em { font-style: normal; color: var(--accent); }
   border: 1px solid var(--border);
 }
 .n8n-note b { color: var(--amber); }
+.n8n-note-wrap { margin-bottom: 16px; }
+.n8n-note-toggle {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+  color: var(--accent); background: none; border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 6px; padding: 6px 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; transition: all 0.15s;
+}
+.n8n-note-toggle:hover { background: rgba(0,212,255,0.06); }
+.n8n-note-arrow { color: var(--muted); font-size: 9px; }
+.n8n-note-body {
+  display: none;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  margin-top: 8px; line-height: 1.7;
+  background: var(--bg2); padding: 10px 14px; border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.n8n-note-wrap.open .n8n-note-body { display: block; }
+.n8n-note-wrap.open .n8n-note-arrow::after { content: '▲ Hide'; }
+.n8n-note-wrap:not(.open) .n8n-note-arrow::after { content: '▼ Show'; }
+.n8n-note-wrap .n8n-note-arrow { font-size: 0; } /* hide original text, use ::after */
+.n8n-note-wrap .n8n-note-arrow::after { font-size: 9px; }
 
 #schedule-btn {
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
@@ -767,6 +800,10 @@ h1 em { font-style: normal; color: var(--accent); }
   position: fixed; bottom: 24px; right: 24px;
   display: flex; flex-direction: column; gap: 8px;
   z-index: 9999; pointer-events: none;
+}
+@media (max-width: 640px) {
+  #toast-container { bottom: 80px; right: 16px; left: 16px; }
+  #toast-container .toast { max-width: 100%; }
 }
 .toast {
   background: var(--surface2); border: 1px solid var(--border2);
@@ -876,9 +913,8 @@ h1 em { font-style: normal; color: var(--accent); }
 <!-- ─── NAVBAR ─── -->
 <nav>
   <div class="nav-brand">
-    <div class="nav-logo"></div>
+    <div class="nav-diamond"></div>
     <span class="nav-name">Signal Intel</span>
-    <span class="nav-version">v2.0</span>
   </div>
   <div class="nav-links">
     <a class="nav-link active" href="index.html">Discover</a>
@@ -889,7 +925,7 @@ h1 em { font-style: normal; color: var(--accent); }
   <div class="nav-right">
     <!-- SYS Panel -->
     <div class="sys-wrap">
-      <button id="sys-btn" type="button">[SYS]</button>
+      <button id="sys-btn" type="button" title="View system status and API metrics">⚡ System Status</button>
       <div id="sys-panel" role="dialog" aria-label="System Metrics">
         <div class="sys-head">
           System Status
@@ -913,17 +949,18 @@ h1 em { font-style: normal; color: var(--accent); }
       <span class="eyebrow-text">Intelligence Pipeline</span>
     </div>
     <h1>Topic <em>Signal</em><br>Intelligence</h1>
+    <p class="hero-tagline">Analyse any topic and get AI-powered trend signals, keyword clusters, and content insights.</p>
     <p class="hero-sub">// LLM-powered · TF-IDF · Multi-source · Structured insights</p>
 
     <div class="search-wrap">
       <input type="text" id="topic-input" placeholder="Enter a topic — e.g. Generative AI, Robotics, Quantum Computing…" autocomplete="off" spellcheck="false"/>
-      <button id="run-btn" type="button">Analyse →</button>
+      <button id="run-btn" type="button">Run Analysis</button>
     </div>
 
     <div class="source-toggle" role="group" aria-label="Data source">
       <button class="src-btn active" data-src="web_news" type="button">WEB + NEWS</button>
       <button class="src-btn" data-src="web_news_linkedin" type="button">
-        + LINKEDIN (Apify)<span class="apify-warn">⚠ Uses Apify credits</span>
+        + LINKEDIN (Apify)<span class="apify-info" title="Uses Apify credits to scrape LinkedIn posts. Each analysis typically consumes 1–5 credits depending on post count.">ⓘ</span>
       </button>
     </div>
 
@@ -1028,8 +1065,13 @@ h1 em { font-style: normal; color: var(--accent); }
     </div>
     <div class="schedule-body">
       <p class="schedule-topic-row">Topic: <b id="schedule-topic-label">—</b></p>
-      <div class="n8n-note">
-        <b>n8n required.</b> Make sure n8n is running at <code>localhost:5678</code>, create a Webhook node, activate it, and paste the URL into <code>N8N_WEBHOOK_URL</code> in your .env. The webhook must be <b>active</b> (not just test mode) for scheduling to work.
+      <div class="n8n-note-wrap">
+        <button class="n8n-note-toggle" type="button" onclick="this.closest('.n8n-note-wrap').classList.toggle('open')">
+          ⚡ n8n Setup Guide <span class="n8n-note-arrow">▼ Show</span>
+        </button>
+        <div class="n8n-note-body">
+          <b>n8n required.</b> Run <code>npx n8n start</code> in your terminal, create a Webhook node in a new workflow, copy the Production URL, and add it as <code>N8N_WEBHOOK_URL</code> in your environment config. Activate the workflow before scheduling.
+        </div>
       </div>
       <div class="freq-toggle" role="group">
         <button class="freq-btn active" data-cron="0 9 * * *"   type="button">Daily 9 AM</button>
@@ -1107,8 +1149,16 @@ async function checkConfig() {
     }
     const banner = document.getElementById('config-banner');
     if (missing.length) {
-      banner.innerHTML = `⚠ Not configured — ${missing.join(' · ')}<br>
-        <span style="font-size:9px;opacity:0.7">Using mock/rule-based fallbacks for unconfigured services. Add keys to .env and restart.</span>`;
+      const missingNames = [];
+      if (!d.serpapi)  missingNames.push('Web Search');
+      if (!d.newsapi)  missingNames.push('News');
+      if (!d.slack)    missingNames.push('Slack');
+      if (!d.sendgrid) missingNames.push('Email');
+      if (!d.notion)   missingNames.push('Notion');
+      if (!d.n8n)      missingNames.push('Scheduling (n8n)');
+      if (!d.apify)    missingNames.push('LinkedIn (Apify)');
+      banner.innerHTML = `⚠ Some integrations are not set up yet — <b>${missingNames.join(', ')}</b> won't work until configured.
+        <br><span style="font-size:9px;opacity:0.7">You can still run analyses using available sources. Configure missing integrations in your .env file to unlock full functionality.</span>`;
       banner.classList.add('visible');
     }
   } catch(_) {}
@@ -1120,9 +1170,19 @@ async function checkConfig() {
 document.querySelectorAll('.example-chip').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('topic-input').value = btn.dataset.topic;
-    document.getElementById('example-chips').style.display = 'none';
+    // Deselect all chips (don't hide them permanently)
+    document.querySelectorAll('.example-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
     runAnalysis();
   });
+});
+
+// Show chips again when input is cleared
+document.getElementById('topic-input').addEventListener('input', e => {
+  if (!e.target.value.trim()) {
+    document.querySelectorAll('.example-chip').forEach(b => b.classList.remove('active'));
+    document.getElementById('example-chips').style.display = '';
+  }
 });
 
 /* ═══════════════════════════════════════════
@@ -1130,8 +1190,8 @@ document.querySelectorAll('.example-chip').forEach(btn => {
 ═══════════════════════════════════════════ */
 const PROGRESS_STEPS = [
   { id: 'step-expand',    label: 'Expanding query…' },
-  { id: 'step-serp',     label: 'Fetching SerpAPI results…' },
-  { id: 'step-news',     label: 'Fetching NewsAPI articles…' },
+  { id: 'step-serp',     label: 'Fetching web results…' },
+  { id: 'step-news',     label: 'Fetching news articles…' },
   { id: 'step-linkedin', label: 'Collecting LinkedIn signals…' },
   { id: 'step-cluster',  label: 'Clustering & scoring trends…' },
   { id: 'step-llm',      label: 'Generating LLM insights…' },
@@ -1280,7 +1340,7 @@ async function runAnalysis(forceRefresh = false) {
     activeQueryIndex = 0;
 
     // ── Persist result so Dashboard / Explore / Reports can load it ──
-    try { localStorage.setItem('si_analysis', JSON.stringify(data)); } catch(_) {}
+    try { localStorage.setItem('si_analysis', JSON.stringify({ ...data, _ts: Date.now() })); } catch(_) {}
     try {
       let rec = JSON.parse(localStorage.getItem('si_recent') || '[]');
       // Normalise legacy entries (plain strings → objects)
@@ -1295,8 +1355,13 @@ async function runAnalysis(forceRefresh = false) {
     showScheduleSection(topic);
     finishProgressLog();
     status.style.display = 'none';
-    // Hide example chips once we have results
-    document.getElementById('example-chips').style.display = 'none';
+    // Deselect chips after analysis completes but keep them visible
+    document.querySelectorAll('.example-chip').forEach(b => b.classList.remove('active'));
+    // Hide nav cards once results are loaded
+    const navDivider = document.querySelector('.page-nav-divider');
+    const navCards = document.querySelector('.page-nav');
+    if (navDivider) navDivider.style.display = 'none';
+    if (navCards) navCards.style.display = 'none';
   } catch(e) {
     clearTimeout(_progTimer);
     const log = document.getElementById('progress-log');
